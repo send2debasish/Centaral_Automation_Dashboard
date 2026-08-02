@@ -149,7 +149,7 @@ def load_data():
     ]
 
     credentials = Credentials.from_service_account_info(
-        "service_account.json",
+        st.secrets["gcp_service_account"],
         scopes=scopes
     )
 
@@ -176,7 +176,7 @@ def load_valve_data():
     ]
 
     credentials = Credentials.from_service_account_info(
-        "service_account.json",
+        st.secrets["gcp_service_account"],
         scopes=scopes
     )
 
@@ -205,7 +205,7 @@ def load_plc_data():
     ]
 
     credentials = Credentials.from_service_account_info(
-        "service_account.json",
+        st.secrets["gcp_service_account"],
         scopes=scopes
     )
 
@@ -234,7 +234,7 @@ def load_shift_data():
     ]
 
     credentials = Credentials.from_service_account_info(
-        "service_account.json",
+        st.secrets["gcp_service_account"],
         scopes=scopes
     )
 
