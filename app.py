@@ -65,8 +65,8 @@ if not st.session_state.logged_in:
     /* Fixed Logo Bottom Right */
 .logo-bottom-right {{
     position: fixed;
-    top: 140px;
-    bottom: 40px;
+    top: 120px;
+    bottom: 30px;
     left: 750px;
     right: 20px;
     z-index: 999;
@@ -84,7 +84,7 @@ if not st.session_state.logged_in:
     }}
 
     .header-title{{
-        font-size:42px;
+        font-size:35px;
         font-weight:bold;
         color:white;
     }}
@@ -97,27 +97,27 @@ if not st.session_state.logged_in:
 
     .login-title {{
         text-align:center;
-        font-size:34px;
+        font-size:20px;
         color:white;
         font-weight:bold;
     }}
 
     .stTextInput label {{
         color:white !important;
-        font-size:26px !important;
+        font-size:10px !important;
         font-weight:bold !important;
     }}
 
     .stTextInput input {{
-        height:40px !important;
-        font-size:20px !important;
+        height:35px !important;
+        font-size:15px !important;
 
 
     }}
 
     .stButton>button {{
-        width:610%;
-        height:60px;
+        width:440%;
+        height:30px;
         font-size:52px;
     }}
 
