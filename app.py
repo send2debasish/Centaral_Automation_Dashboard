@@ -578,4 +578,39 @@ else:
             hide_index=True,
             height=700
         )
+# ==========================
+# LINK PAGE
+# ==========================
+    elif st.session_state.page == "LINK PAGE":
+
+      st.markdown("""
+      <h1 style='margin-top:-150px; margin-bottom:20px; text-align:center;'>
+        🔗 TRAINING & APPLICATION LINKS
+      </h1>
+      """, unsafe_allow_html=True)
+
+      if st.button("⬅ Back to Home", key="back_link"):
+        st.session_state.page = "Home"
+        st.rerun()
+
+      df = load_link_data()
+# Display 3 buttons in each row
+      for i in range(0, len(df), 3):
+
+        col1, col2, col3 = st.columns(3)
+        cols = [col1, col2, col3]
+
+        for j in range(3):
+
+            if i + j < len(df):
+
+                row = df.iloc[i + j]
+
+                with cols[j]:
+
+                    st.link_button(
+                        label="📘 " + row["BUTTON"],
+                        url=row["LINK"],
+                        use_container_width=True
+                    )
 
