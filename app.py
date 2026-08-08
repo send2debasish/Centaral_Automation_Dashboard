@@ -67,7 +67,7 @@ if not st.session_state.logged_in:
     position: fixed;
     top: 120px;
     bottom: 30px;
-    left: 750px;
+    left: 500px;
     right: 20px;
     z-index: 999;
 }}
