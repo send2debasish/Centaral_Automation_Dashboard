@@ -249,7 +249,27 @@ def load_shift_data():
     df = pd.DataFrame(data)
 
     return df
+#==================================================
+#LINK PAGES
+#==================================================
+@st.cache_data(ttl=60)
+def load_link_data():
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
 
+    credentials = Credentials.from_service_account_info(
+        "service_account.json",
+        scopes=scopes
+    )
+
+    client = gspread.authorize(credentials)
+
+    workbook = client.open("inst_list")
+    worksheet = workbook.worksheet("Sheet5")
+
+    return pd.DataFrame(worksheet.get_all_records())
 
 # =====================================================
 # LOGIN PAGE
