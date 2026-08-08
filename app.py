@@ -236,8 +236,7 @@ def load_shift_data():
     credentials = Credentials.from_service_account_info(
     st.secrets["gcp_service_account"],
     scopes=scopes
-))
-
+)
     client = gspread.authorize(credentials)
 
     workbook = client.open("inst_list")
