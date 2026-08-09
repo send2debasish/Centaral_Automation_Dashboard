@@ -3,52 +3,53 @@ import gspread
 import pandas as pd
 import base64
 from google.oauth2.service_account import Credentials
-#------------------------------
-# Page Config
-# -----------------------------
+
+# =========================================================
+# PAGE CONFIG
+# =========================================================
 st.set_page_config(
     page_title="C&I",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# -----------------------------
-# Session State
-# -----------------------------
+# =========================================================
+# SESSION
+# =========================================================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# -----------------------------
-# Page Session
-# -----------------------------
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 
-# -----------------------------
-# Hide Streamlit Menu
-# -----------------------------
+
+# =========================================================
+# HIDE Streamlit DEFAULT UI
+# =========================================================
 st.markdown("""
 <style>
-#MainMenu {visibility:hidden;}
-footer {visibility:hidden;}
-header {visibility:hidden;}
+#MainMenu, footer, header {
+    visibility: hidden;
+}
 </style>
 """, unsafe_allow_html=True)
 
 
-# -----------------------------
-# Load Background Image
-# -----------------------------
+# =========================================================
+# IMAGE FUNCTION
+# =========================================================
 def get_base64(file):
     with open(file, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
 
 bg = get_base64("background.png")
+logo = get_base64("jsw_logo.png")
 
-# -----------------------------
-# CSS
-# -----------------------------
+
+# =========================================================
+# LOGIN CSS
+# =========================================================
 if not st.session_state.logged_in:
 
     st.markdown(f"""
@@ -62,233 +63,115 @@ if not st.session_state.logged_in:
         background-attachment: fixed;
     }}
 
-    /* Fixed Logo Bottom Right */
-.logo-bottom-right {{
-    position: fixed;
-    top: 120px;
-    bottom: 30px;
-    left: 500px;
-    right: 20px;
-    z-index: 999;
-}}
-
-.logo-bottom-right img {{
-    width: 250px;      /* Change size as required */
-    opacity: 0.95;     /* Optional */
-}}
-
-    .header-box{{
-        width:750px;
-        margin:-10px auto 20px auto;
-        text-align:center;
+    .header-title {{
+        text-align: center;
+        font-size: 40px;
+        font-weight: bold;
+        color: white;
+        margin-top: -20px;
+        margin-bottom: 35px;
     }}
 
-    .header-title{{
-        font-size:35px;
-        font-weight:bold;
-        color:white;
+    .logo {{
+        position: fixed;
+        top: 150px;
+        left: 550px;
+        z-index: 9999;
     }}
 
-    .header-subtitle{{
-        font-size:20px;
-        font-weight:bold;
-        color:#FFD700;
+    .logo img {{
+        width: 200px;
     }}
 
     .login-title {{
-        text-align:center;
-        font-size:20px;
-        color:white;
-        font-weight:bold;
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: white;
+        margin-bottom: 15px;
     }}
 
     .stTextInput label {{
-        color:white !important;
-        font-size:10px !important;
-        font-weight:bold !important;
+        color: white !important;
+        font-size: 20px !important;
+        font-weight: bold !important;
     }}
 
-    .stTextInput input {{
-        height:35px !important;
-        font-size:15px !important;
-
-
-    }}
-
-    .stButton>button {{
-        width:440%;
-        height:30px;
-        font-size:52px;
+    div[data-testid="stTextInput"] input {{
+        width: 100%;
+        height: 55px;
+        font-size: 18px;
+        text-align: left;
+        padding: 0 15px 12px;
+        border-radius: 12px;
     }}
 
     </style>
     """, unsafe_allow_html=True)
 
+
+# =========================================================
+# OTHER PAGES - WHITE BACKGROUND
+# =========================================================
 else:
 
     st.markdown("""
     <style>
-
-    .stApp{
-        background:white !important;
-        background-image:none !important;
+    .stApp {
+        background: #f3f8fc !important;
+        background-image: none !important;
     }
-
     </style>
     """, unsafe_allow_html=True)
 
 
-# -----------------------------
-# Load Data from Google Sheet1
-# -----------------------------
+# =========================================================
+# COMMON GOOGLE SHEET FUNCTION
+# =========================================================
 @st.cache_data(ttl=60)
-def load_data():
+def load_sheet(sheet_name):
+
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
 
-    credentials = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],
-    scopes=scopes
-)
+    credentials = Credentials.from_service_account_file(
+        "service_account.json",
+        scopes=scopes
+    )
 
     client = gspread.authorize(credentials)
 
-    workbook = client.open("inst_list")
-    worksheet = workbook.worksheet("Sheet1")
+    worksheet = (
+        client
+        .open("inst_list")
+        .worksheet(sheet_name)
+    )
 
-    data = worksheet.get_all_records()
-
-    df = pd.DataFrame(data)
-
-    return df
-
-
-# -----------------------------
-# Load Control Valve Data (Sheet2)
-# -----------------------------
-@st.cache_data(ttl=60)
-def load_valve_data():
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
-
-    credentials = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],
-    scopes=scopes
-)
-
-    client = gspread.authorize(credentials)
-
-    workbook = client.open("inst_list")
-
-    # Load Sheet2
-    worksheet = workbook.worksheet("Sheet2")
-
-    data = worksheet.get_all_records()
-
-    df = pd.DataFrame(data)
-
-    return df
+    return pd.DataFrame(
+        worksheet.get_all_records()
+    )
 
 
-# -----------------------------
-# Load PLC checklist Data (Sheet3)
-# -----------------------------
-@st.cache_data(ttl=60)
-def load_plc_data():
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
-
-    credentials = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],
-    scopes=scopes
-)
-
-    client = gspread.authorize(credentials)
-
-    workbook = client.open("inst_list")
-
-    # Load Sheet2
-    worksheet = workbook.worksheet("Sheet3")
-
-    data = worksheet.get_all_records()
-
-    df = pd.DataFrame(data)
-
-    return df
-
-
-# ============================================
-# Load Shift Rota Data (Sheet4)
-# ============================================
-@st.cache_data(ttl=60)
-def load_shift_data():
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
-
-    credentials = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],
-    scopes=scopes
-)
-    client = gspread.authorize(credentials)
-
-    workbook = client.open("inst_list")
-
-    worksheet = workbook.worksheet("Sheet4")
-
-    data = worksheet.get_all_records()
-
-    df = pd.DataFrame(data)
-
-    return df
-#==================================================
-#LINK PAGES
-#==================================================
-@st.cache_data(ttl=60)
-def load_link_data():
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
-
-    credentials = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],
-    scopes=scopes
-)
-
-    client = gspread.authorize(credentials)
-
-    workbook = client.open("inst_list")
-    worksheet = workbook.worksheet("Sheet5")
-
-    return pd.DataFrame(worksheet.get_all_records())
-
-# =====================================================
+# =========================================================
 # LOGIN PAGE
-# =====================================================
+# =========================================================
 if not st.session_state.logged_in:
 
-    st.markdown("""
-    <div class="header-box">
-        <div class="header-title">
-            CENTRAL AUTOMATION DEPARTMENT
+    st.markdown(
+        '<div class="header-title">CENTRAL AUTOMATION DEPARTMENT</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f'''
+        <div class="logo">
+            <img src="data:image/png;base64,{logo}">
         </div>
-
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="logo-bottom-right">
-        <img src="data:image/png;base64,{}">
-    </div>
-    """.format(get_base64("jsw_logo.png")), unsafe_allow_html=True)
+        ''',
+        unsafe_allow_html=True
+    )
 
     left, center, right = st.columns([1.3, 1, 1.3])
 
@@ -301,335 +184,705 @@ if not st.session_state.logged_in:
 
         username = st.text_input(
             "USERNAME",
-            placeholder="Enter Username"
+            placeholder="Enter Username",
+            key="username"
         )
 
         password = st.text_input(
             "PASSWORD",
             type="password",
-            placeholder="Enter Password"
+            placeholder="Enter Password",
+            key="password"
         )
 
-        if st.button("LOGIN"):
+        if st.button(
+            "LOGIN",
+            use_container_width=True
+        ):
 
             if username == "admin" and password == "jsw123":
+
                 st.session_state.logged_in = True
+                st.session_state.page = "Home"
                 st.rerun()
 
             else:
-                st.error("❌ Invalid Username or Password")
 
+                st.error(
+                    "❌ Invalid Username or Password"
+                )
+
+
+# =========================================================
+# AFTER LOGIN
+# =========================================================
 else:
 
-    # ==========================
-    # HOME PAGE
-    # ==========================
+    # =====================================================
+    # HOME / INDEX PAGE
+    # =====================================================
     if st.session_state.page == "Home":
 
-        st.markdown(
-            """
-            <h1 style='margin-top:-120px; margin-bottom:20px;'>
-                🏠 INDEX PAGE
-            </h1>
-            """,
-            unsafe_allow_html=True
-        )
-        # =============================================
-        # Logout button below heading (left side)
-        # =============================================
-        left, right = st.columns([1, 8])
+        # =================================================
+        # INDEX PAGE CSS
+        # =================================================
+        st.markdown("""
+        <style>
 
-        with left:
-            if st.button("🚪 Logout", use_container_width=True):
+        /* ==============================
+           INDEX TITLE
+           ============================== */
+
+        .index-title {
+            text-align: center;
+
+            font-size: 44px;
+            font-weight: 900;
+
+            letter-spacing: 3px;
+
+            color: #183b63;
+
+            margin-top: -150px;
+            margin-bottom: 20px;
+
+            text-shadow:
+                0 2px 3px rgba(0,0,0,0.20),
+                0 0 15px rgba(40,130,200,0.25);
+        }
+
+
+        /* ==============================
+           3D INDEX BUTTONS
+           ============================== */
+        .stButton {
+            transform: translateY(-70px);
+        }
+        .stButton > button {
+
+            height: 82px !important;
+
+            border-radius: 10px !important;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    #315f89,
+                    #204d75,
+                    #12395f,
+                    #082641
+                ) !important;
+
+            color: white !important;
+
+            border: 1px solid #6c9ec5 !important;
+
+            font-size: 48px !important;
+
+            font-weight: 800 !important;
+
+            letter-spacing: 0.8px !important;
+
+            box-shadow:
+
+                0 7px 0 #041522,
+
+                0 12px 20px
+                rgba(0,0,0,0.30),
+
+                0 0 10px
+                rgba(30,140,220,0.25),
+
+                inset 0 2px 2px
+                rgba(255,255,255,0.35),
+
+                inset 0 -5px 8px
+                rgba(0,0,0,0.30) !important;
+
+            transition: all 0.18s ease !important;
+        }
+
+
+        /* ==============================
+           BUTTON HOVER
+           ============================== */
+
+        .stButton > button:hover {
+
+            transform: translateY(-5px) !important;
+
+            border-color: #83c5ef !important;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    #3c76a5,
+                    #28618e,
+                    #174b73,
+                    #0a2c49
+                ) !important;
+
+            box-shadow:
+
+                0 12px 0 #041522,
+
+                0 18px 30px
+                rgba(0,0,0,0.35),
+
+                0 0 15px
+                rgba(30,160,240,0.60),
+
+                0 0 30px
+                rgba(30,150,230,0.30),
+
+                inset 0 2px 3px
+                rgba(255,255,255,0.45) !important;
+        }
+
+
+        /* ==============================
+           BUTTON PRESS
+           ============================== */
+
+        .stButton > button:active {
+
+            transform: translateY(5px) !important;
+
+            box-shadow:
+
+                0 2px 0 #041522,
+
+                0 5px 10px
+                rgba(0,0,0,0.25),
+
+                inset 0 4px 8px
+                rgba(0,0,0,0.35) !important;
+        }
+
+
+        /* ==============================
+           LOGOUT
+           ============================== */
+
+        .logout-button > button {
+
+            height: 45px !important;
+
+            width: 125px !important;
+
+            font-size: 16px !important;
+
+            border-radius: 8px !important;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    #214d75,
+                    #12385c,
+                    #071f38
+                ) !important;
+        }
+
+        </style>
+        """, unsafe_allow_html=True)
+
+
+        # =================================================
+        # TOP HEADER
+        # =================================================
+        top_left, top_center, top_right = st.columns([1, 3, 1])
+
+
+        # =================================================
+        # LOGOUT - TOP LEFT
+        # =================================================
+        with top_left:
+
+            if st.button(
+                "🚪 Logout",
+                key="logout"
+            ):
+
                 st.session_state.logged_in = False
                 st.session_state.page = "Home"
                 st.rerun()
 
+
+        # =================================================
+        # INDEX TITLE - CENTER
+        # =================================================
+        with top_center:
+
+            st.markdown(
+                '<div class="index-title">INDEX PAGE</div>',
+                unsafe_allow_html=True
+            )
+        # =================================================
+        # INDEX BUTTONS
+        # =================================================
         col1, col2, col3, col4 = st.columns(4)
 
+        # =================================================
+        # COLUMN 1
+        # =================================================
         with col1:
-            if st.button("📋 INSTRUMENT LIST", use_container_width=True):
+
+            if st.button(
+                " INSTRUMENT LIST",
+                use_container_width=True,
+                key="instrument_list"
+            ):
                 st.session_state.page = "Instrument"
                 st.rerun()
 
-            if st.button("📊 INSTRUMENT SUMMERY", use_container_width=True):
+
+            if st.button(
+                "INSTRUMENT SUMMERY",
+                use_container_width=True,
+                key="instrument_summary"
+            ):
                 st.session_state.page = "Summary"
                 st.rerun()
 
-            if st.button("SHIFT ROTA", use_container_width=True):
+
+            if st.button(
+                "SHIFT ROTA",
+                use_container_width=True,
+                key="shift_rota"
+            ):
                 st.session_state.page = "SHIFT ROTA"
                 st.rerun()
 
-            if st.button("SHIFT DATA", use_container_width=True):
+
+            if st.button(
+                "SHIFT DATA",
+                use_container_width=True,
+                key="shift_data"
+            ):
                 st.session_state.page = "SHIFT DATA"
                 st.rerun()
 
+
+        # =================================================
+        # COLUMN 2
+        # =================================================
         with col2:
-            if st.button("⚙ CONTROL VALVE LIST", use_container_width=True):
+
+            if st.button(
+                "CONTROL VALVE LIST",
+                use_container_width=True,
+                key="valve_list"
+            ):
                 st.session_state.page = "Valve"
                 st.rerun()
 
-            if st.button("📈 CONTROL VALVE SUMMERY", use_container_width=True):
+
+            if st.button(
+                "CONTROL VALVE SUMMERY",
+                use_container_width=True,
+                key="valve_summary"
+            ):
                 st.session_state.page = "ValveSummary"
                 st.rerun()
 
-            if st.button("LINK PAGE", use_container_width=True):
+
+            if st.button(
+                "LINK PAGE",
+                use_container_width=True,
+                key="link_page"
+            ):
                 st.session_state.page = "LINK PAGE"
                 st.rerun()
 
+
+        # =================================================
+        # COLUMN 3
+        # =================================================
         with col3:
-            if st.button("PLC AUDIT CHECKLIST", use_container_width=True):
+
+            if st.button(
+                "PLC AUDIT CHECKLIST",
+                use_container_width=True,
+                key="plc_checklist"
+            ):
                 st.session_state.page = "PLC CHECKLIST"
                 st.rerun()
 
-            if st.button("📈 PLC CHECKLIST SUMMER", use_container_width=True):
+
+            if st.button(
+                "PLC CHECKLIST SUMMER",
+                use_container_width=True,
+                key="plc_summary"
+            ):
                 st.session_state.page = "PLC SUMMERY"
                 st.rerun()
 
+
+        # =================================================
+        # COLUMN 4
+        # =================================================
         with col4:
-            if st.button("THERMOGRAPHY", use_container_width=True):
+
+            if st.button(
+                "THERMOGRAPHY",
+                use_container_width=True,
+                key="thermography"
+            ):
                 st.session_state.page = "THERMOGRAPHY RECORD"
                 st.rerun()
 
-            if st.button("📈 ", use_container_width=True):
+
+            if st.button(
+                "📈 ",
+                use_container_width=True,
+                key="thermography_summary"
+            ):
                 st.session_state.page = "THERMOGRAPHY SUMMERY"
                 st.rerun()
 
 
-    # ==========================
-    # INSTRUMENT LIST PAGE
-    # ==========================
-    elif st.session_state.page == "Instrument":
+    # =====================================================
+    # OTHER PAGES
+    # =====================================================
+    else:
 
-        st.markdown(
-            """
-            <h1 style='margin-top:-150px; margin-bottom:15px;'>
-                📋 INSTRUMENT LIST
-            </h1>
-            """,
-            unsafe_allow_html=True
-        )
-
-        if st.button("⬅ Back to Home"):
-            st.session_state.page = "Home"
-            st.rerun()
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        df = load_data()
-
-        st.dataframe(
-            df,
-            use_container_width=True,
-            hide_index=True,
-            height=700
-        )
-
-    # ==========================
-    # INSTRUMENT SUMMARY PAGE
-    # ==========================
-    elif st.session_state.page == "Summary":
-
-        st.markdown(
-            """
-            <h1 style='margin-top:-150px; margin-bottom:15px;'>
-                📋 INSTRUMENT SUMMERY
-            </h1>
-            """,
-            unsafe_allow_html=True
-        )
-
-        if st.button("⬅ Back to Home"):
-            st.session_state.page = "Home"
-            st.rerun()
-
-        # Read Excel
-        df = load_data()
-
-        # Ensure Installed Qty is numeric
-        df["INSTALLED QTY"] = pd.to_numeric(
-            df["INSTALLED QTY"],
-            errors="coerce"
-        )
-
-        # Summary
-        summary = pd.pivot_table(
-            df,
-            index="AREA",
-            columns="INSTRUMENT TYPE",
-            values="INSTALLED QTY",
-            aggfunc="sum",
-            fill_value=0
-        )
-
-        st.dataframe(
-            summary.reset_index(),
-            use_container_width=True,
-            hide_index=True,
-            height=700
-        )
-
-    # ==========================
-    # CONTROL VALVE LIST PAGE
-    # ==========================
-
-    elif st.session_state.page == "Valve":
-
-        st.markdown(
-            """
-            <h1 style='margin-top:-150px; margin-bottom:40px;'>
-                ⚙ CONTROL VALVE LIST
-            </h1>
-            """,
-            unsafe_allow_html=True
-        )
-
-        if st.button("⬅ Back to Home"):
-            st.session_state.page = "Home"
-            st.rerun()
-
-        # Load Sheet2
-        df = load_valve_data()
-
-        st.dataframe(
-            df,
-            use_container_width=True,
-            hide_index=True,
-            height=700
-        )
-    # ==========================
-    # CONTROL VALVE SUMMARY PAGE
-    # ==========================
-    elif st.session_state.page == "ValveSummary":
-
+        # =================================================
+        # BACK BUTTON CSS
+        # =================================================
         st.markdown("""
-        <h1 style='margin-top:-150px; margin-bottom:15px;'>
-            📈 CONTROL VALVE SUMMARY
-        </h1>
+        <style>
+
+        .stButton > button {
+            border-radius: 8px !important;
+        }
+
+        </style>
         """, unsafe_allow_html=True)
 
-        if st.button("⬅ Back to Home", key="back_valve_summary"):
-            st.session_state.page = "Home"
-            st.rerun()
 
-        # Load Control Valve Data
-        df = load_valve_data()
+        # =================================================
+        # BACK BUTTON - TOP LEFT
+        # =================================================
+        back_col, empty_col = st.columns([1, 8])
 
-        # Convert Quantity to numeric
-        df["Quantity"] = pd.to_numeric(df["Quantity"], errors="coerce")
+        with back_col:
 
-        # Area-wise Control Valve Count
-        summary = pd.pivot_table(
-            df,
-            index="Area",
-            values="Quantity",
-            aggfunc="sum",
-            fill_value=0
-        ).reset_index()
-
-        summary.rename(columns={"Quantity": "CONTROL VALVE COUNT"}, inplace=True)
-
-        total = summary["CONTROL VALVE COUNT"].sum()
-
-        st.metric("Total Control Valves", int(total))
-
-        st.dataframe(
-            summary,
-            use_container_width=True,
-            hide_index=True,
-            height=700
-        )
-    # ==========================
-    # PLC AUDIT CHECK LIST PAGE
-    # ==========================
-
-    elif st.session_state.page == "PLC CHECKLIST":
-
-        st.markdown(
-            """
-            <h1 style='margin-top:-150px; margin-bottom:15px;'>
-                ⚙ PLC AUDIT CHECKLIST
-            </h1>
-            """,
-            unsafe_allow_html=True
-        )
-
-        if st.button("⬅ Back to Home"):
-            st.session_state.page = "Home"
-            st.rerun()
-
-        # Load Sheet3
-        df = load_plc_data()
-
-        st.dataframe(
-            df,
-            use_container_width=True,
-            hide_index=True,
-            height=700
-        )
+            if st.button(
+                "⬅ Back to Home",
+                key=f"back_{st.session_state.page}"
+            ):
+                st.session_state.page = "Home"
+                st.rerun()
 
 
-    # ==========================
-    # SHIFT ROTA PAGE
-    # ==========================
+        # =================================================
+        # PAGE TITLES
+        # =================================================
+        titles = {
 
-    elif st.session_state.page == "SHIFT ROTA":
+            "Instrument":
+                "INSTRUMENT LIST",
 
-        st.markdown(
-            """
-            <h1 style='margin-top:-150px; margin-bottom:15px;'>
-                ⚙ SHIFT ROTA LIST
-            </h1>
-            """,
-            unsafe_allow_html=True
-        )
+            "Summary":
+                "INSTRUMENT SUMMERY",
 
-        if st.button("⬅ Back to Home"):
-            st.session_state.page = "Home"
-            st.rerun()
+            "Valve":
+                "CONTROL VALVE LIST",
 
-        # Load Sheet4
-        df = load_shift_data()
+            "ValveSummary":
+                "CONTROL VALVE SUMMARY",
 
-        st.dataframe(
-            df,
-            use_container_width=True,
-            hide_index=True,
-            height=700
-        )
-# ==========================
-# LINK PAGE
-# ==========================
-    elif st.session_state.page == "LINK PAGE":
+            "PLC CHECKLIST":
+                "PLC AUDIT CHECKLIST",
 
-      st.markdown("""
-      <h1 style='margin-top:-150px; margin-bottom:20px; text-align:center;'>
-        🔗 TRAINING & APPLICATION LINKS
-      </h1>
-      """, unsafe_allow_html=True)
+            "SHIFT ROTA":
+                "SHIFT ROTA LIST",
 
-      if st.button("⬅ Back to Home", key="back_link"):
-        st.session_state.page = "Home"
-        st.rerun()
+            "LINK PAGE":
+                "TRAINING & APPLICATION LINKS",
 
-      df = load_link_data()
-# Display 3 buttons in each row
-      for i in range(0, len(df), 3):
+            "SHIFT DATA":
+                "SHIFT DATA"
+        }
 
-        col1, col2, col3 = st.columns(3)
-        cols = [col1, col2, col3]
 
-        for j in range(3):
+        if st.session_state.page in titles:
 
-            if i + j < len(df):
+            st.markdown(
+                f"""
+                <h1 style="
+                    text-align:center;
+                    margin-top:-250px;
+                ">
+                    {titles[st.session_state.page]}
+                </h1>
+                """,
+                unsafe_allow_html=True
+            )
 
-                row = df.iloc[i + j]
 
-                with cols[j]:
+        # =================================================
+        # INSTRUMENT LIST
+        # =================================================
+        if st.session_state.page == "Instrument":
 
-                    st.link_button(
-                        label="📘 " + row["BUTTON"],
-                        url=row["LINK"],
-                        use_container_width=True
+            df = load_sheet("Sheet1")
+
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                height=700
+            )
+
+
+        # =================================================
+        # INSTRUMENT SUMMARY
+        # =================================================
+        elif st.session_state.page == "Summary":
+
+            df = load_sheet("Sheet1")
+
+            df["INSTALLED QTY"] = pd.to_numeric(
+                df["INSTALLED QTY"],
+                errors="coerce"
+            )
+
+            summary = pd.pivot_table(
+                df,
+                index="AREA",
+                columns="INSTRUMENT TYPE",
+                values="INSTALLED QTY",
+                aggfunc="sum",
+                fill_value=0
+            )
+
+            st.dataframe(
+                summary.reset_index(),
+                use_container_width=True,
+                hide_index=True,
+                height=700
+            )
+
+
+        # =================================================
+        # CONTROL VALVE LIST
+        # =================================================
+        elif st.session_state.page == "Valve":
+
+            df = load_sheet("Sheet2")
+
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                height=700
+            )
+
+
+        # =================================================
+        # CONTROL VALVE SUMMARY
+        # =================================================
+        elif st.session_state.page == "ValveSummary":
+
+            df = load_sheet("Sheet2")
+
+            df["Quantity"] = pd.to_numeric(
+                df["Quantity"],
+                errors="coerce"
+            )
+
+            summary = pd.pivot_table(
+                df,
+                index="Area",
+                values="Quantity",
+                aggfunc="sum",
+                fill_value=0
+            ).reset_index()
+
+            summary.rename(
+                columns={
+                    "Quantity": "CONTROL VALVE COUNT"
+                },
+                inplace=True
+            )
+
+            st.metric(
+                "Total Control Valves",
+                int(summary["CONTROL VALVE COUNT"].sum())
+            )
+
+            st.dataframe(
+                summary,
+                use_container_width=True,
+                hide_index=True,
+                height=700
+            )
+
+
+        # =================================================
+        # PLC CHECKLIST
+        # =================================================
+        elif st.session_state.page == "PLC CHECKLIST":
+
+            df = load_sheet("Sheet3")
+
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                height=700
+            )
+
+
+        # =================================================
+        # SHIFT ROTA
+        # =================================================
+        elif st.session_state.page == "SHIFT ROTA":
+
+            df = load_sheet("Sheet4")
+
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                height=700
+            )
+
+
+        # =================================================
+        # LINK PAGE
+        # =================================================
+        elif st.session_state.page == "LINK PAGE":
+
+            df = load_sheet("Sheet5")
+
+            for i in range(0, len(df), 3):
+
+                c1, c2, c3 = st.columns(3)
+
+                for col, j in zip(
+                    [c1, c2, c3],
+                    range(3)
+                ):
+
+                    if i + j < len(df):
+
+                        row = df.iloc[i + j]
+
+                        with col:
+
+                            st.link_button(
+                                "📘 " + str(row["BUTTON"]),
+                                str(row["LINK"]),
+                                use_container_width=True
+                            )
+
+
+        # =================================================
+        # SHIFT DATA
+        # =================================================
+        elif st.session_state.page == "SHIFT DATA":
+
+            df = load_sheet("Sheet4")
+
+            df.columns = (
+                df.columns
+                .astype(str)
+                .str.strip()
+            )
+
+            date_columns = list(
+                df.columns[3:]
+            )
+
+            selected_date = st.selectbox(
+                "📅 SELECT DATE",
+                date_columns
+            )
+
+            shift = (
+                df[selected_date]
+                .astype(str)
+                .str.strip()
+                .str.upper()
+            )
+
+            shifts = {
+
+                "A SHIFT":
+                    df.loc[
+                        shift == "A",
+                        "NAME"
+                    ].tolist(),
+
+                "B SHIFT":
+                    df.loc[
+                        shift == "B",
+                        "NAME"
+                    ].tolist(),
+
+                "C SHIFT":
+                    df.loc[
+                        shift == "C",
+                        "NAME"
+                    ].tolist(),
+
+                "G SHIFT":
+                    df.loc[
+                        shift == "G",
+                        "NAME"
+                    ].tolist()
+            }
+
+            st.markdown(
+                f"""
+                <h3 style="text-align:center">
+                    SHIFT DETAILS - {selected_date}
+                </h3>
+                """,
+                unsafe_allow_html=True
+            )
+
+            c1, c2, c3, c4 = st.columns(4)
+
+            for col, (shift_name, names) in zip(
+                [c1, c2, c3, c4],
+                shifts.items()
+            ):
+
+                with col:
+
+                    st.markdown(
+                        f"""
+                        <div style="
+                            text-align:center;
+                            font-size:21px;
+                            font-weight:bold;
+                            padding:8px;
+                            background:#dceaf7;
+                            border-radius:8px;
+                            margin-bottom:8px;">
+                            {shift_name}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
                     )
 
+                    for name in names:
+
+                        st.markdown(
+                            f"""
+                            <div style="
+                                text-align:center;
+                                font-size:16px;
+                                padding:6px;
+                                margin:3px;
+                                border:1px solid #ccc;
+                                border-radius:6px;
+                                background:white;">
+                                {name}
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
