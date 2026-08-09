@@ -137,7 +137,7 @@ def load_sheet(sheet_name):
     ]
 
     credentials = Credentials.from_service_account_info(
-        "service_account.json",
+        st.secrets["gcp_service_account"],
         scopes=scopes
     )
 
