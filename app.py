@@ -136,7 +136,7 @@ def load_sheet(sheet_name):
         "https://www.googleapis.com/auth/drive"
     ]
 
-    credentials = Credentials.from_service_account_file(
+    credentials = Credentials.from_service_account_info(
         "service_account.json",
         scopes=scopes
     )
@@ -885,4 +885,5 @@ else:
                             </div>
                             """,
                             unsafe_allow_html=True
-                        )
+                       )
+#====================================================================================================================
