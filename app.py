@@ -261,6 +261,7 @@ else:
         .stButton > button {
 
             height: 82px !important;
+            width: 200px !important;
 
             border-radius: 10px !important;
 
@@ -277,7 +278,7 @@ else:
 
             border: 1px solid #6c9ec5 !important;
 
-            font-size: 48px !important;
+            font-size: 56px !important;
 
             font-weight: 800 !important;
 
@@ -367,10 +368,8 @@ else:
         .logout-button > button {
 
             height: 45px !important;
-
             width: 125px !important;
-
-            font-size: 16px !important;
+            font-size: 36px !important;
 
             border-radius: 8px !important;
 
@@ -399,7 +398,7 @@ else:
         with top_left:
 
             if st.button(
-                "🚪 Logout",
+                "LOGOUT",
                 key="logout"
             ):
 
@@ -547,35 +546,6 @@ else:
     else:
 
         # =================================================
-        # BACK BUTTON CSS
-        # =================================================
-        st.markdown("""
-        <style>
-
-        .stButton > button {
-            border-radius: 8px !important;
-        }
-
-        </style>
-        """, unsafe_allow_html=True)
-
-
-        # =================================================
-        # BACK BUTTON - TOP LEFT
-        # =================================================
-        back_col, empty_col = st.columns([1, 8])
-
-        with back_col:
-
-            if st.button(
-                "⬅ Back to Home",
-                key=f"back_{st.session_state.page}"
-            ):
-                st.session_state.page = "Home"
-                st.rerun()
-
-
-        # =================================================
         # PAGE TITLES
         # =================================================
         titles = {
@@ -606,17 +576,64 @@ else:
         }
 
 
-        if st.session_state.page in titles:
+        # =================================================
+        # INTERNAL PAGE HEADER CSS
+        # =================================================
+        st.markdown("""
+        <style>
+
+        .block-container {
+            max-width: 100% !important;
+            padding: 5px 8px 5px 8px !important;
+            transform: translateY(-40px) !important;
+        }
+
+        /* Back button */
+        div[data-testid="stButton"] > button {
+            width: 110px !important;
+            height: 32px !important;
+            min-height: 32px !important;
+            padding: 0 !important;
+            font-size: 12px !important;
+            margin: 0 !important;
+        }
+
+        /* Page title */
+        .page-title {
+            text-align: center;
+            font-size: 38px;
+            font-weight: 700;
+            margin: -5px 0 0 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Full-width data sheets */
+        div[data-testid="stDataFrame"] {
+            width: 100% !important;
+        }
+
+        </style>
+        """, unsafe_allow_html=True)
+
+
+        # =================================================
+        # BACK BUTTON + TITLE - SAME ROW
+        # =================================================
+        back_col, title_col, right_col = st.columns([1.3, 7.4, 1.3])
+
+        with back_col:
+
+            if st.button(
+                "⬅ Back",
+                key=f"back_{st.session_state.page}"
+            ):
+                st.session_state.page = "Home"
+                st.rerun()
+
+        with title_col:
 
             st.markdown(
-                f"""
-                <h1 style="
-                    text-align:center;
-                    margin-top:-250px;
-                ">
-                    {titles[st.session_state.page]}
-                </h1>
-                """,
+                f'<div class="page-title">{titles.get(st.session_state.page, st.session_state.page)}</div>',
                 unsafe_allow_html=True
             )
 
@@ -634,8 +651,6 @@ else:
                 hide_index=True,
                 height=700
             )
-
-
         # =================================================
         # INSTRUMENT SUMMARY
         # =================================================
@@ -644,8 +659,7 @@ else:
             df = load_sheet("Sheet1")
 
             df["INSTALLED QTY"] = pd.to_numeric(
-                df["INSTALLED QTY"],
-                errors="coerce"
+                df["INSTALLED QTY"], errors="coerce"
             )
 
             summary = pd.pivot_table(
@@ -655,15 +669,20 @@ else:
                 values="INSTALLED QTY",
                 aggfunc="sum",
                 fill_value=0
-            )
+            ).reset_index()
 
             st.dataframe(
-                summary.reset_index(),
+                summary,
                 use_container_width=True,
                 hide_index=True,
-                height=700
+                height=500,
+                column_config={
+                    "AREA": st.column_config.TextColumn(
+                        "AREA",
+                        pinned=True
+                    )
+                }
             )
-
 
         # =================================================
         # CONTROL VALVE LIST
@@ -676,7 +695,7 @@ else:
                 df,
                 use_container_width=True,
                 hide_index=True,
-                height=700
+                height=600
             )
 
 
@@ -716,7 +735,7 @@ else:
                 summary,
                 use_container_width=True,
                 hide_index=True,
-                height=700
+                height=600
             )
 
 
@@ -731,7 +750,7 @@ else:
                 df,
                 use_container_width=True,
                 hide_index=True,
-                height=700
+                height=600
             )
 
 
@@ -746,7 +765,13 @@ else:
                 df,
                 use_container_width=True,
                 hide_index=True,
-                height=700
+                height=500,
+                column_config={
+                    "NAME": st.column_config.TextColumn(
+                        "NAME",
+                        pinned=True
+                    )
+                }
             )
 
 
@@ -773,7 +798,7 @@ else:
                         with col:
 
                             st.link_button(
-                                "📘 " + str(row["BUTTON"]),
+                                str(row["BUTTON"]),
                                 str(row["LINK"]),
                                 use_container_width=True
                             )
