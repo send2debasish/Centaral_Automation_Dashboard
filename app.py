@@ -649,7 +649,7 @@ else:
                 df,
                 use_container_width=True,
                 hide_index=True,
-                height=700
+                height=500
             )
         # =================================================
         # INSTRUMENT SUMMARY
@@ -695,7 +695,7 @@ else:
                 df,
                 use_container_width=True,
                 hide_index=True,
-                height=600
+                height=500
             )
 
 
@@ -735,7 +735,7 @@ else:
                 summary,
                 use_container_width=True,
                 hide_index=True,
-                height=600
+                height=500
             )
 
 
