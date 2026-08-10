@@ -750,7 +750,7 @@ else:
                 df,
                 use_container_width=True,
                 hide_index=True,
-                height=600
+                height=500
             )
 
 
