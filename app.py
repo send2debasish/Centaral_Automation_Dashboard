@@ -112,7 +112,7 @@ if not st.session_state.logged_in:
 
     div[data-testid="stTextInput"] input {{
         width: 100%;
-        height: 45px;
+        height: 65px;
         font-size: 18px;
         text-align: left;
         padding: 0 15px 12px;
