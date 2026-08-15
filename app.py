@@ -115,7 +115,7 @@ if not st.session_state.logged_in:
         height: 55px;
         font-size: 18px;
         text-align: left;
-        padding: 7px 15px 12px;
+        padding: 10px 15px 12px;
         border-radius: 12px;
     }}
 
