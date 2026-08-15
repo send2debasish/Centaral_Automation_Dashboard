@@ -2,20 +2,25 @@ import streamlit as st
 import gspread
 import pandas as pd
 import base64
+from datetime import datetime
 from google.oauth2.service_account import Credentials
+
 
 # =========================================================
 # PAGE CONFIG
 # =========================================================
+
 st.set_page_config(
     page_title="C&I",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
+
 # =========================================================
 # SESSION
 # =========================================================
+
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
@@ -24,13 +29,18 @@ if "page" not in st.session_state:
 
 
 # =========================================================
-# HIDE Streamlit DEFAULT UI
+# HIDE STREAMLIT DEFAULT UI
 # =========================================================
+
 st.markdown("""
 <style>
-#MainMenu, footer, header {
+
+#MainMenu,
+footer,
+header {
     visibility: hidden;
 }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -38,7 +48,9 @@ st.markdown("""
 # =========================================================
 # IMAGE FUNCTION
 # =========================================================
+
 def get_base64(file):
+
     with open(file, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
@@ -50,6 +62,7 @@ logo = get_base64("jsw_logo.png")
 # =========================================================
 # LOGIN CSS
 # =========================================================
+
 if not st.session_state.logged_in:
 
     st.markdown(f"""
@@ -113,14 +126,17 @@ if not st.session_state.logged_in:
 # =========================================================
 # OTHER PAGES - WHITE BACKGROUND
 # =========================================================
+
 else:
 
     st.markdown("""
     <style>
+
     .stApp {
         background: #f3f8fc !important;
         background-image: none !important;
     }
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -128,6 +144,7 @@ else:
 # =========================================================
 # COMMON GOOGLE SHEET FUNCTION
 # =========================================================
+
 @st.cache_data(ttl=60)
 def load_sheet(sheet_name):
 
@@ -157,6 +174,7 @@ def load_sheet(sheet_name):
 # =========================================================
 # LOGIN PAGE
 # =========================================================
+
 if not st.session_state.logged_in:
 
     st.markdown(
@@ -204,6 +222,7 @@ if not st.session_state.logged_in:
 
                 st.session_state.logged_in = True
                 st.session_state.page = "Home"
+
                 st.rerun()
 
             else:
@@ -216,48 +235,52 @@ if not st.session_state.logged_in:
 # =========================================================
 # AFTER LOGIN
 # =========================================================
+
 else:
 
     # =====================================================
     # HOME / INDEX PAGE
     # =====================================================
+
     if st.session_state.page == "Home":
 
         # =================================================
         # INDEX PAGE CSS
         # =================================================
+
         st.markdown("""
         <style>
+        
+        /* =================================================
+           FIX HOME DASHBOARD SCREEN
+          ================================================= */
 
-        /* ==============================
-           INDEX TITLE
-           ============================== */
-
-        .index-title {
-            text-align: center;
-
-            font-size: 44px;
-            font-weight: 900;
-
-            letter-spacing: 3px;
-
-            color: #183b63;
-
-            margin-top: -150px;
-            margin-bottom: 20px;
-
-            text-shadow:
-                0 2px 3px rgba(0,0,0,0.20),
-                0 0 15px rgba(40,130,200,0.25);
+        html,
+        body,
+        [data-testid="stAppViewContainer"] {
+              overflow: hidden !important;
         }
 
+        [data-testid="stAppViewContainer"] {
+        height: 100vh !important;
+        }
 
-        /* ==============================
+        [data-testid="stAppViewContainer"] > .main {
+              overflow: hidden !important;
+        }
+
+        [data-testid="stMainBlockContainer"] {
+              overflow: hidden !important;
+        }
+
+        /* =================================================
            3D INDEX BUTTONS
-           ============================== */
+           ================================================= */
+
         .stButton {
-            transform: translateY(-70px);
+            transform: translateY(0px);
         }
+
         .stButton > button {
 
             height: 82px !important;
@@ -304,9 +327,9 @@ else:
         }
 
 
-        /* ==============================
+        /* =================================================
            BUTTON HOVER
-           ============================== */
+           ================================================= */
 
         .stButton > button:hover {
 
@@ -341,9 +364,9 @@ else:
         }
 
 
-        /* ==============================
+        /* =================================================
            BUTTON PRESS
-           ============================== */
+           ================================================= */
 
         .stButton > button:active {
 
@@ -361,15 +384,229 @@ else:
         }
 
 
-        /* ==============================
-           LOGOUT
-           ============================== */
+        /* =================================================
+           DASHBOARD HEADER
+           ================================================= */
 
-        .logout-button > button {
+        .dashboard-header {
+
+    width: 100vw;
+    height: 100px;
+
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+
+    background:
+        linear-gradient(
+            90deg,
+            #061426,
+            #0b2038,
+            #07182b
+        );
+
+    border: 1px solid #315b7d;
+    border-radius: 6px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 5px 10px;
+    box-sizing: border-box;
+
+    box-shadow:
+        0 4px 12px
+        rgba(0,0,0,0.35);
+
+    margin-top: -155px;
+    margin-bottom: 15px;
+    }
+
+
+        /* =================================================
+           JSW LOGO
+        ================================================= */
+
+        .dashboard-logo {
+
+            width: 210px;
+            height: 72px;
+
+            background: white;
+
+            border-radius: 5px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            flex-shrink: 0;
+
+        }
+
+        .dashboard-logo img {
+
+            width: 195px;
+
+            height: auto;
+
+        }
+
+        /* =================================================
+           CENTER HEADER
+           ================================================= */
+
+        .dashboard-center {
+
+            flex: 1;
+
+            text-align: center;
+
+            padding: 0 15px;
+
+        }
+
+        .dashboard-main-title {
+
+            color: white;
+
+            font-size: 18px;
+
+            font-weight: 800;
+
+            margin: 0;
+
+        }
+
+        .dashboard-sub-title {
+
+            color: #ffd900;
+
+            font-size: 22px;
+
+            font-weight: 900;
+
+            margin: 2px 0;
+
+        }
+
+        .dashboard-description {
+
+            color: white;
+
+            font-size: 11px;
+
+            margin: 0;
+
+        }
+
+        .plant-status {
+
+            color: #4cff00;
+
+            font-size: 12px;
+
+            font-weight: bold;
+
+            margin-top: 2px;
+
+        }
+
+        /* =================================================
+           RIGHT HEADER INFORMATION
+           ================================================= */
+
+        .header-info {
+
+            display: flex;
+
+            height: 70px;
+
+            flex-shrink: 0;
+
+        }
+
+        .info-box {
+
+            min-width: 75px;
+
+            padding: 5px;
+
+            border-left:
+                1px solid #52677d;
+
+            color: white;
+
+            text-align: center;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+        }
+
+        .info-label {
+
+            font-size: 8px;
+
+            font-weight: bold;
+
+            color: #d7e2ec;
+
+            margin-bottom: 3px;
+
+        }
+
+        .info-value {
+
+            font-size: 15px;
+
+            font-weight: bold;
+
+            color: white;
+
+        }
+
+
+        /* =================================================
+           LOGOUT FORM
+           ================================================= */
+
+        div[data-testid="stForm"] {
+
+          position: fixed !important;
+
+          top: 23px !important;
+
+          right: 185px !important;
+
+          width: 125px !important;
+
+          z-index: 99999 !important;
+
+          border: none !important;
+
+          padding: 0 !important;
+
+          margin: 0 !important;
+
+          background: transparent !important;
+
+        }
+
+        div[data-testid="stForm"]
+        div[data-testid="stButton"] > button {
 
             height: 45px !important;
+
             width: 125px !important;
-            font-size: 36px !important;
+
+            min-height: 45px !important;
+
+            font-size: 16px !important;
 
             border-radius: 8px !important;
 
@@ -380,6 +617,10 @@ else:
                     #12385c,
                     #071f38
                 ) !important;
+
+            transform: translateY(0px) !important;
+            
+
         }
 
         </style>
@@ -387,43 +628,92 @@ else:
 
 
         # =================================================
-        # TOP HEADER
+        # DASHBOARD HEADER
         # =================================================
-        top_left, top_center, top_right = st.columns([1, 3, 1])
+
+        now = datetime.now()
+
+        current_date = now.strftime("%d-%b-%Y")
+
+        current_time = now.strftime("%I:%M:%S %p")
+
+
+        # IMPORTANT:
+        # HTML starts immediately after f"""
+        # This prevents Streamlit from showing
+        # HTML tags as text.
+
+        st.markdown(f"""<div class="dashboard-header">
+
+<div class="dashboard-logo">
+<img src="data:image/png;base64,{logo}">
+</div>
+
+<div class="dashboard-center">
+
+<div class="dashboard-main-title">
+CENTRAL AUTOMATION DEPARTMENT
+</div>
+
+<div class="dashboard-sub-title">
+AUTOMATION &amp; INSTRUMENT DASHBOARD
+</div>
+
+<div class="dashboard-description">
+Central Control &amp; Instrumentation Digital Dashboard
+</div>
+
+
+</div>
+
+<div class="header-info">
+
+<div class="info-box">
+<div class="info-label">DATE</div>
+<div class="info-value">{current_date}</div>
+</div>
+
+<div class="info-box">
+<div class="info-label">TIME</div>
+<div class="info-value">{current_time}</div>
+</div>
+
+</div>
+
+</div>""", unsafe_allow_html=True)
 
 
         # =================================================
-        # LOGOUT - TOP LEFT
+        # LOGOUT
         # =================================================
-        with top_left:
 
-            if st.button(
-                "LOGOUT",
-                key="logout"
-            ):
+        with st.form(
+            "logout_form",
+            border=False
+        ):
+
+            logout_clicked = st.form_submit_button(
+                "LOGOUT"
+            )
+
+            if logout_clicked:
 
                 st.session_state.logged_in = False
+
                 st.session_state.page = "Home"
+
                 st.rerun()
 
-
-        # =================================================
-        # INDEX TITLE - CENTER
-        # =================================================
-        with top_center:
-
-            st.markdown(
-                '<div class="index-title">INDEX PAGE</div>',
-                unsafe_allow_html=True
-            )
         # =================================================
         # INDEX BUTTONS
         # =================================================
-        col1, col2, col3, col4 = st.columns(4)
+
+        col1, col2, col3, col4, col5 = st.columns(5)
 
         # =================================================
         # COLUMN 1
         # =================================================
+
         with col1:
 
             if st.button(
@@ -431,40 +721,32 @@ else:
                 use_container_width=True,
                 key="instrument_list"
             ):
+
                 st.session_state.page = "Instrument"
+
                 st.rerun()
 
 
             if st.button(
-                "INSTRUMENT SUMMERY",
+                "INSTRUMENT SUMMARY",
                 use_container_width=True,
                 key="instrument_summary"
             ):
+
                 st.session_state.page = "Summary"
+
                 st.rerun()
 
 
-            if st.button(
-                "SHIFT ROTA",
-                use_container_width=True,
-                key="shift_rota"
-            ):
-                st.session_state.page = "SHIFT ROTA"
-                st.rerun()
 
 
-            if st.button(
-                "SHIFT DATA",
-                use_container_width=True,
-                key="shift_data"
-            ):
-                st.session_state.page = "SHIFT DATA"
                 st.rerun()
 
 
         # =================================================
         # COLUMN 2
         # =================================================
+
         with col2:
 
             if st.button(
@@ -472,16 +754,20 @@ else:
                 use_container_width=True,
                 key="valve_list"
             ):
+
                 st.session_state.page = "Valve"
+
                 st.rerun()
 
 
             if st.button(
-                "CONTROL VALVE SUMMERY",
+                "CONTROL VALVE SUMMARY",
                 use_container_width=True,
                 key="valve_summary"
             ):
+
                 st.session_state.page = "ValveSummary"
+
                 st.rerun()
 
 
@@ -490,13 +776,16 @@ else:
                 use_container_width=True,
                 key="link_page"
             ):
+
                 st.session_state.page = "LINK PAGE"
+
                 st.rerun()
 
 
         # =================================================
         # COLUMN 3
         # =================================================
+
         with col3:
 
             if st.button(
@@ -504,22 +793,27 @@ else:
                 use_container_width=True,
                 key="plc_checklist"
             ):
+
                 st.session_state.page = "PLC CHECKLIST"
+
                 st.rerun()
 
 
             if st.button(
-                "PLC CHECKLIST SUMMER",
+                "PLC CHECKLIST SUMMARY",
                 use_container_width=True,
                 key="plc_summary"
             ):
-                st.session_state.page = "PLC SUMMERY"
+
+                st.session_state.page = "PLC SUMMARY"
+
                 st.rerun()
 
 
         # =================================================
         # COLUMN 4
         # =================================================
+
         with col4:
 
             if st.button(
@@ -527,7 +821,9 @@ else:
                 use_container_width=True,
                 key="thermography"
             ):
+
                 st.session_state.page = "THERMOGRAPHY RECORD"
+
                 st.rerun()
 
 
@@ -536,25 +832,54 @@ else:
                 use_container_width=True,
                 key="thermography_summary"
             ):
-                st.session_state.page = "THERMOGRAPHY SUMMERY"
+
+                st.session_state.page = "THERMOGRAPHY SUMMARY"
+
                 st.rerun()
+
+        # =================================================
+        # COLUMN 5
+        # =================================================
+
+        with col5:
+
+            if st.button(
+                "SHIFT ROTA",
+                use_container_width=True,
+                key="shift_rota"
+            ):
+
+                st.session_state.page = "SHIFT ROTA"
+
+                st.rerun()
+
+
+            if st.button(
+                "SHIFT DATA",
+                use_container_width=True,
+                key="shift_data"
+            ):
+
+                st.session_state.page = "SHIFT DATA"
 
 
     # =====================================================
     # OTHER PAGES
     # =====================================================
+
     else:
 
         # =================================================
         # PAGE TITLES
         # =================================================
+
         titles = {
 
             "Instrument":
                 "INSTRUMENT LIST",
 
             "Summary":
-                "INSTRUMENT SUMMERY",
+                "INSTRUMENT SUMMARY",
 
             "Valve":
                 "CONTROL VALVE LIST",
@@ -579,47 +904,174 @@ else:
         # =================================================
         # INTERNAL PAGE HEADER CSS
         # =================================================
+
         st.markdown("""
         <style>
 
         .block-container {
+
             max-width: 100% !important;
-            padding: 5px 8px 5px 8px !important;
-            transform: translateY(-40px) !important;
+
+            padding:
+                5px 8px 5px 8px !important;
+
+            transform:
+                translateY(-40px) !important;
+
         }
+
 
         /* Back button */
+
         div[data-testid="stButton"] > button {
+
             width: 110px !important;
+
             height: 32px !important;
+
             min-height: 32px !important;
+
             padding: 0 !important;
+
             font-size: 12px !important;
+
             margin: 0 !important;
+
         }
+
 
         /* Page title */
+
         .page-title {
+
             text-align: center;
+
             font-size: 38px;
+
             font-weight: 700;
-            margin: -5px 0 0 0 !important;
+
+            margin:
+                -5px 0 0 0 !important;
+
             padding: 0 !important;
+
         }
+
 
         /* Full-width data sheets */
-        div[data-testid="stDataFrame"] {
-            width: 100% !important;
-        }
 
+        div[data-testid="stDataFrame"] {
+
+            width: 100% !important;
+
+        }
+        
+        /* =================================================
+   3D INDUSTRIAL TRAINING & APPLICATION BUTTONS
+   ================================================= */
+
+div[data-testid="stLinkButton"] {
+    width: 100% !important;
+    margin-top: 8px !important;
+    margin-bottom: 14px !important;
+}
+
+div[data-testid="stLinkButton"] > a {
+
+    height: 72px !important;
+    min-height: 72px !important;
+    width: 100% !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    box-sizing: border-box !important;
+
+    padding: 8px 10px !important;
+
+    border-radius: 10px !important;
+
+    background: linear-gradient(
+        145deg,
+        #315f89,
+        #204d75,
+        #12395f,
+        #082641
+    ) !important;
+
+    color: white !important;
+
+    border: 1px solid #6c9ec5 !important;
+
+    font-size: 20px !important;
+
+    font-weight: 800 !important;
+
+    letter-spacing: 0.5px !important;
+
+    text-decoration: none !important;
+
+    box-shadow:
+        0 7px 0 #041522,
+        0 12px 20px rgba(0,0,0,0.30),
+        0 0 10px rgba(30,140,220,0.25),
+        inset 0 2px 2px rgba(255,255,255,0.35),
+        inset 0 -5px 8px rgba(0,0,0,0.30) !important;
+
+    transition: all 0.18s ease !important;
+}
+
+
+/* HOVER */
+
+div[data-testid="stLinkButton"] > a:hover {
+
+    transform: translateY(-5px) !important;
+
+    color: white !important;
+
+    border-color: #83c5ef !important;
+
+    background: linear-gradient(
+        145deg,
+        #3c76a5,
+        #28618e,
+        #174b73,
+        #0a2c49
+    ) !important;
+
+    box-shadow:
+        0 12px 0 #041522,
+        0 18px 30px rgba(0,0,0,0.35),
+        0 0 15px rgba(30,160,240,0.60),
+        0 0 30px rgba(30,150,230,0.30),
+        inset 0 2px 3px rgba(255,255,255,0.45) !important;
+}
+
+
+/* PRESS */
+
+div[data-testid="stLinkButton"] > a:active {
+
+    transform: translateY(5px) !important;
+
+    box-shadow:
+        0 2px 0 #041522,
+        0 5px 10px rgba(0,0,0,0.25),
+        inset 0 4px 8px rgba(0,0,0,0.35) !important;
+}
         </style>
         """, unsafe_allow_html=True)
-
 
         # =================================================
         # BACK BUTTON + TITLE - SAME ROW
         # =================================================
-        back_col, title_col, right_col = st.columns([1.3, 7.4, 1.3])
+
+        back_col, title_col, right_col = st.columns(
+            [1.3, 7.4, 1.3]
+        )
+
 
         with back_col:
 
@@ -627,8 +1079,11 @@ else:
                 "⬅ Back",
                 key=f"back_{st.session_state.page}"
             ):
+
                 st.session_state.page = "Home"
+
                 st.rerun()
+
 
         with title_col:
 
@@ -637,10 +1092,10 @@ else:
                 unsafe_allow_html=True
             )
 
-
         # =================================================
         # INSTRUMENT LIST
         # =================================================
+
         if st.session_state.page == "Instrument":
 
             df = load_sheet("Sheet1")
@@ -651,15 +1106,18 @@ else:
                 hide_index=True,
                 height=500
             )
+
         # =================================================
         # INSTRUMENT SUMMARY
         # =================================================
+
         elif st.session_state.page == "Summary":
 
             df = load_sheet("Sheet1")
 
             df["INSTALLED QTY"] = pd.to_numeric(
-                df["INSTALLED QTY"], errors="coerce"
+                df["INSTALLED QTY"],
+                errors="coerce"
             )
 
             summary = pd.pivot_table(
@@ -676,17 +1134,21 @@ else:
                 use_container_width=True,
                 hide_index=True,
                 height=500,
+
                 column_config={
-                    "AREA": st.column_config.TextColumn(
-                        "AREA",
-                        pinned=True
-                    )
+
+                    "AREA":
+                        st.column_config.TextColumn(
+                            "AREA",
+                            pinned=True
+                        )
                 }
             )
 
         # =================================================
         # CONTROL VALVE LIST
         # =================================================
+
         elif st.session_state.page == "Valve":
 
             df = load_sheet("Sheet2")
@@ -702,6 +1164,7 @@ else:
         # =================================================
         # CONTROL VALVE SUMMARY
         # =================================================
+
         elif st.session_state.page == "ValveSummary":
 
             df = load_sheet("Sheet2")
@@ -721,14 +1184,19 @@ else:
 
             summary.rename(
                 columns={
-                    "Quantity": "CONTROL VALVE COUNT"
+                    "Quantity":
+                        "CONTROL VALVE COUNT"
                 },
                 inplace=True
             )
 
             st.metric(
                 "Total Control Valves",
-                int(summary["CONTROL VALVE COUNT"].sum())
+                int(
+                    summary[
+                        "CONTROL VALVE COUNT"
+                    ].sum()
+                )
             )
 
             st.dataframe(
@@ -738,10 +1206,10 @@ else:
                 height=500
             )
 
-
         # =================================================
         # PLC CHECKLIST
         # =================================================
+
         elif st.session_state.page == "PLC CHECKLIST":
 
             df = load_sheet("Sheet3")
@@ -753,10 +1221,10 @@ else:
                 height=500
             )
 
-
         # =================================================
         # SHIFT ROTA
         # =================================================
+
         elif st.session_state.page == "SHIFT ROTA":
 
             df = load_sheet("Sheet4")
@@ -766,29 +1234,31 @@ else:
                 use_container_width=True,
                 hide_index=True,
                 height=500,
+
                 column_config={
-                    "NAME": st.column_config.TextColumn(
-                        "NAME",
-                        pinned=True
-                    )
+
+                    "NAME":
+                        st.column_config.TextColumn(
+                            "NAME",
+                            pinned=True
+                        )
                 }
             )
-
-
         # =================================================
         # LINK PAGE
         # =================================================
+
         elif st.session_state.page == "LINK PAGE":
 
             df = load_sheet("Sheet5")
 
-            for i in range(0, len(df), 3):
+            for i in range(0, len(df), 4):
 
-                c1, c2, c3 = st.columns(3)
+                c1, c2, c3, c4 = st.columns(4)
 
                 for col, j in zip(
-                    [c1, c2, c3],
-                    range(3)
+                    [c1, c2, c3, c4],
+                    range(4)
                 ):
 
                     if i + j < len(df):
@@ -807,6 +1277,7 @@ else:
         # =================================================
         # SHIFT DATA
         # =================================================
+
         elif st.session_state.page == "SHIFT DATA":
 
             df = load_sheet("Sheet4")
@@ -910,5 +1381,5 @@ else:
                             </div>
                             """,
                             unsafe_allow_html=True
-                       )
-#====================================================================================================================
+                        )
+
