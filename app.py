@@ -135,7 +135,7 @@ else:
     <style>
 
     .stApp {
-        background: #f3f8fc !important;
+        background: white !important;
         background-image: none !important;
     }
 
