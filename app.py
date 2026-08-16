@@ -155,8 +155,8 @@ def load_sheet(sheet_name):
         "https://www.googleapis.com/auth/drive"
     ]
 
-    credentials = Credentials.from_service_account_file(
-        "service_account.json",
+    credentials = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
         scopes=scopes
     )
 
