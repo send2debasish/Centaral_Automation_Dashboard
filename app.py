@@ -633,7 +633,7 @@ else:
         # DASHBOARD HEADER
         # =================================================
         st_autorefresh(
-            interval=60000,
+            interval=9000,
             key="dashboard_clock"
         )
         now = datetime.now(ZoneInfo("Asia/Kolkata"))
