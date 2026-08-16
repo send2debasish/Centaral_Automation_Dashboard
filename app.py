@@ -3,6 +3,8 @@ import gspread
 import pandas as pd
 import base64
 from datetime import datetime
+from zoneinfo import ZoneInfo
+from streamlit_autorefresh import st_autorefresh
 from google.oauth2.service_account import Credentials
 
 
@@ -115,7 +117,7 @@ if not st.session_state.logged_in:
         height: 55px;
         font-size: 18px;
         text-align: left;
-        padding: 10px 15px 12px;
+        padding: 5px 15px 12px;
         border-radius: 12px;
     }}
 
@@ -153,8 +155,8 @@ def load_sheet(sheet_name):
         "https://www.googleapis.com/auth/drive"
     ]
 
-    credentials = Credentials.from_service_account_info(
-        st.secrets["gcp_service_account"],
+    credentials = Credentials.from_service_account_file(
+        "service_account.json",
         scopes=scopes
     )
 
@@ -417,7 +419,7 @@ else:
         0 4px 12px
         rgba(0,0,0,0.35);
 
-    margin-top: -155px;
+    margin-top: -200px;
     margin-bottom: 15px;
     }
 
@@ -630,8 +632,11 @@ else:
         # =================================================
         # DASHBOARD HEADER
         # =================================================
-
-        now = datetime.now()
+        st_autorefresh(
+            interval=1000,
+            key="dashboard_clock"
+        )
+        now = datetime.now(ZoneInfo("Asia/Kolkata"))
 
         current_date = now.strftime("%d-%b-%Y")
 
@@ -658,11 +663,6 @@ CENTRAL AUTOMATION DEPARTMENT
 <div class="dashboard-sub-title">
 AUTOMATION &amp; INSTRUMENT DASHBOARD
 </div>
-
-<div class="dashboard-description">
-Central Control &amp; Instrumentation Digital Dashboard
-</div>
-
 
 </div>
 
@@ -734,11 +734,6 @@ Central Control &amp; Instrumentation Digital Dashboard
             ):
 
                 st.session_state.page = "Summary"
-
-                st.rerun()
-
-
-
 
                 st.rerun()
 
