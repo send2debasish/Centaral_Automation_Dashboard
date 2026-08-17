@@ -280,13 +280,15 @@ else:
            ================================================= */
 
         .stButton {
+            width: 100%;
             transform: translateY(0px);
         }
 
         .stButton > button {
 
             height: 82px !important;
-            width: 200px !important;
+            width: 100% !important;
+            min-width: 0 !important;
 
             border-radius: 10px !important;
 
@@ -640,13 +642,8 @@ else:
 
         current_date = now.strftime("%d-%b-%Y")
 
-        current_time = now.strftime("%I:%M:%S %p")
+        current_time = now.strftime("%I:%M %p")
 
-
-        # IMPORTANT:
-        # HTML starts immediately after f"""
-        # This prevents Streamlit from showing
-        # HTML tags as text.
 
         st.markdown(f"""<div class="dashboard-header">
 
@@ -812,12 +809,12 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
         with col4:
 
             if st.button(
-                "THERMOGRAPHY",
+                "DEPARTMENT STATUS LIST",
                 use_container_width=True,
-                key="thermography"
+                key="department_status"
             ):
 
-                st.session_state.page = "THERMOGRAPHY RECORD"
+                st.session_state.page = "DEPARTMENT STATUS LIST"
 
                 st.rerun()
 
@@ -856,6 +853,7 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
             ):
 
                 st.session_state.page = "SHIFT DATA"
+                st.rerun()
 
 
     # =====================================================
@@ -892,7 +890,10 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
                 "TRAINING & APPLICATION LINKS",
 
             "SHIFT DATA":
-                "SHIFT DATA"
+                "SHIFT DATA",
+
+            "DEPARTMENT STATUS LIST":
+                  "DEPARTMENT STATUS LIST",
         }
 
 
@@ -1378,3 +1379,17 @@ div[data-testid="stLinkButton"] > a:active {
                             unsafe_allow_html=True
                         )
 
+# =================================================
+# DEPARTMENT STATUS
+# =================================================
+
+        elif st.session_state.page =="DEPARTMENT STATUS LIST":
+
+                df = load_sheet("Sheet6")
+
+                st.dataframe(
+                    df,
+                    use_container_width=True,
+                    hide_index=True,
+                    height=500
+                )
