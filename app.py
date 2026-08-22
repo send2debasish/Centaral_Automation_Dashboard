@@ -764,7 +764,7 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
 
 
             if st.button(
-                "LINK PAGE",
+                "APPLICATION LINK",
                 use_container_width=True,
                 key="link_page"
             ):
