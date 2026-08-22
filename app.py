@@ -764,12 +764,12 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
 
 
             if st.button(
-                "APPLICATION LINK",
+                "APPLICATION LINK NAME",
                 use_container_width=True,
                 key="link_page"
             ):
 
-                st.session_state.page = "LINK PAGE"
+                st.session_state.page = "APPLICATION LINK"
 
                 st.rerun()
 
