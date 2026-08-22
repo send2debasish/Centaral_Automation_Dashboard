@@ -886,7 +886,7 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
             "SHIFT ROTA":
                 "SHIFT ROTA LIST",
 
-            "LINK PAGE":
+            "APPLICATION LINK":
                 "TRAINING & APPLICATION LINKS",
 
             "SHIFT DATA":
@@ -1244,7 +1244,7 @@ div[data-testid="stLinkButton"] > a:active {
         # LINK PAGE
         # =================================================
 
-        elif st.session_state.page == "LINK PAGE":
+        elif st.session_state.page == "APPLICATION LINK":
 
             df = load_sheet("Sheet5")
 
