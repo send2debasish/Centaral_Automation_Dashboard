@@ -3,22 +3,16 @@ import gspread
 import pandas as pd
 import base64
 from datetime import datetime
-from zoneinfo import ZoneInfo
-from streamlit_autorefresh import st_autorefresh
 from google.oauth2.service_account import Credentials
-
-
+from googleapiclient.discovery import build
 # =========================================================
 # PAGE CONFIG
 # =========================================================
-
 st.set_page_config(
     page_title="C&I",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
-
-
 # =========================================================
 # SESSION
 # =========================================================
@@ -29,6 +23,11 @@ if "logged_in" not in st.session_state:
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 
+if "system_architecture_department" not in st.session_state:
+    st.session_state.system_architecture_department = None
+
+if "system_architecture_department_name" not in st.session_state:
+    st.session_state.system_architecture_department_name = None
 
 # =========================================================
 # HIDE STREAMLIT DEFAULT UI
@@ -45,21 +44,17 @@ header {
 
 </style>
 """, unsafe_allow_html=True)
-
-
 # =========================================================
 # IMAGE FUNCTION
 # =========================================================
 
 def get_base64(file):
-
     with open(file, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
 
 bg = get_base64("background.png")
 logo = get_base64("jsw_logo.png")
-
 
 # =========================================================
 # LOGIN CSS
@@ -123,25 +118,21 @@ if not st.session_state.logged_in:
 
     </style>
     """, unsafe_allow_html=True)
-
-
 # =========================================================
 # OTHER PAGES - WHITE BACKGROUND
 # =========================================================
-
 else:
 
     st.markdown("""
     <style>
 
     .stApp {
-        background: white !important;
+        background: #f3f8fc !important;
         background-image: none !important;
     }
 
     </style>
     """, unsafe_allow_html=True)
-
 
 # =========================================================
 # COMMON GOOGLE SHEET FUNCTION
@@ -149,7 +140,6 @@ else:
 
 @st.cache_data(ttl=60)
 def load_sheet(sheet_name):
-
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
@@ -172,6 +162,425 @@ def load_sheet(sheet_name):
         worksheet.get_all_records()
     )
 
+# =========================================================
+# SYSTEM ARCHITECTURE - GOOGLE DRIVE
+# =========================================================
+
+@st.cache_resource
+def get_drive_service():
+
+    credentials = Credentials.from_service_account_file(
+        "service_account.json",
+        scopes=[
+            "https://www.googleapis.com/auth/drive"
+        ]
+    )
+
+    return build(
+        "drive",
+        "v3",
+        credentials=credentials
+    )
+
+
+def get_system_architecture_folder():
+
+    service = get_drive_service()
+
+    query = (
+        "name = 'JJSL AUTOMATION NETWORK ARCHITECTURE' "
+        "and mimeType = 'application/vnd.google-apps.folder' "
+        "and trashed = false"
+    )
+
+    # First search the service account's normal Drive corpus.
+    result = service.files().list(
+        q=query,
+        spaces="drive",
+        corpora="user",
+        includeItemsFromAllDrives=True,
+        supportsAllDrives=True,
+        fields="files(id,name,mimeType,webViewLink,driveId)",
+        pageSize=100
+    ).execute()
+
+    folders = result.get("files", [])
+
+    # Fallback: search all accessible drives as well.
+    if not folders:
+        result = service.files().list(
+            q=query,
+            spaces="drive",
+            corpora="allDrives",
+            includeItemsFromAllDrives=True,
+            supportsAllDrives=True,
+            fields="files(id,name,mimeType,webViewLink,driveId)",
+            pageSize=100
+        ).execute()
+
+        folders = result.get("files", [])
+
+    if folders:
+        return folders[0]
+
+    return None
+
+
+def get_department_folders(parent_id):
+
+    service = get_drive_service()
+
+    query = (
+        f"'{parent_id}' in parents "
+        "and mimeType = 'application/vnd.google-apps.folder' "
+        "and trashed = false"
+    )
+
+    result = service.files().list(
+        q=query,
+        spaces="drive",
+        corpora="allDrives",
+        includeItemsFromAllDrives=True,
+        supportsAllDrives=True,
+        fields="files(id,name,mimeType,webViewLink)",
+        orderBy="name"
+    ).execute()
+
+    return result.get("files", [])
+
+
+def get_department_documents(parent_id):
+
+    service = get_drive_service()
+
+    query = (
+        f"'{parent_id}' in parents "
+        "and mimeType != 'application/vnd.google-apps.folder' "
+        "and trashed = false"
+    )
+
+    result = service.files().list(
+        q=query,
+        spaces="drive",
+        corpora="allDrives",
+        includeItemsFromAllDrives=True,
+        supportsAllDrives=True,
+        fields="files(id,name,webViewLink,mimeType)",
+        orderBy="name"
+    ).execute()
+
+    return result.get("files", [])
+
+
+# ============================================================
+# ANALYZER SUMMARY
+# ============================================================
+
+def show_analyzer_summary(df):
+
+    st.markdown("""
+    <style>
+    .summary-title {
+        font-size: 30px;
+        font-weight: 800;
+        color: #174A7C;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 16px;
+        font-family: Arial, sans-serif;
+    }
+
+    .summary-table th {
+        background: #174F86;
+        color: white;
+        padding: 12px 10px;
+        text-align: center;
+        font-weight: 700;
+        border: 1px solid white;
+    }
+
+    .summary-table td {
+        padding: 9px 12px;
+        border: 1px solid #D0D7DE;
+        background: white;
+    }
+
+    .department-cell {
+        background: #DCEEFF !important;
+        color: #123E68;
+        font-weight: 700;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 17px;
+    }
+
+    .make-cell {
+        text-align: left;
+        padding-left: 25px !important;
+    }
+
+    .qty-cell {
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .department-total td {
+        background: #C9E3F8 !important;
+        color: #123E68;
+        font-weight: 800;
+    }
+
+    .department-total .qty-cell {
+        text-align: center;
+        font-size: 17px;
+    }
+
+    .grand-total td {
+        background: #174F86 !important;
+        color: white !important;
+        font-weight: 800;
+        font-size: 18px;
+        padding: 12px;
+    }
+
+    .grand-total .qty-cell {
+        text-align: center;
+        font-size: 20px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # --------------------------------------------------------
+    # FIND REQUIRED COLUMNS
+    # --------------------------------------------------------
+
+    department_col = None
+    make_col = None
+    quantity_col = None
+
+    # Department column
+    for col in df.columns:
+        if str(col).strip().lower() in [
+            "department",
+            "dept",
+            "department name",
+            "area"
+        ]:
+            department_col = col
+            break
+
+    # Make / OEM column
+    for col in df.columns:
+        if str(col).strip().lower() in [
+            "make",
+            "oem",
+            "make/oem",
+            "make / oem",
+            "manufacturer",
+            "make oem"
+        ]:
+            make_col = col
+            break
+
+    # Quantity column
+    for col in df.columns:
+        if str(col).strip().lower() in [
+            "quantity installed",
+            "qty installed",
+            "installed qty",
+            "installed quantity",
+            "qty installed",
+            "quantity",
+            "qty",
+            "quantity available"
+        ]:
+            quantity_col = col
+            break
+
+    # --------------------------------------------------------
+    # CHECK COLUMNS
+    # --------------------------------------------------------
+
+    if department_col is None:
+        st.error("Department column not found.")
+        st.write("Available columns:", list(df.columns))
+        return
+
+    if make_col is None:
+        st.error("Make/OEM column not found.")
+        st.write("Available columns:", list(df.columns))
+        return
+
+    if quantity_col is None:
+        st.error("Quantity Installed column not found.")
+        st.write("Available columns:", list(df.columns))
+        return
+
+    # --------------------------------------------------------
+    # CLEAN DATA
+    # --------------------------------------------------------
+
+    summary_df = df[
+        [department_col, make_col, quantity_col]
+    ].copy()
+
+    summary_df.columns = [
+        "Department",
+        "Make / OEM",
+        "Quantity Installed"
+    ]
+
+    summary_df["Department"] = (
+        summary_df["Department"]
+        .fillna("Others")
+        .astype(str)
+        .str.strip()
+    )
+
+    summary_df["Make / OEM"] = (
+        summary_df["Make / OEM"]
+        .fillna("Others")
+        .astype(str)
+        .str.strip()
+    )
+
+    summary_df["Quantity Installed"] = pd.to_numeric(
+        summary_df["Quantity Installed"],
+        errors="coerce"
+    ).fillna(0)
+
+    # Remove blank rows
+    summary_df = summary_df[
+        (summary_df["Department"] != "") &
+        (summary_df["Make / OEM"] != "")
+    ]
+
+    # --------------------------------------------------------
+    # GROUP DEPARTMENT + MAKE/OEM
+    # --------------------------------------------------------
+
+    grouped = (
+        summary_df
+        .groupby(
+            ["Department", "Make / OEM"],
+            as_index=False
+        )["Quantity Installed"]
+        .sum()
+    )
+
+    grouped = grouped.sort_values(
+        ["Department", "Make / OEM"]
+    )
+
+    # --------------------------------------------------------
+    # CREATE HTML TABLE
+    # --------------------------------------------------------
+
+    html = """
+    <table class="summary-table">
+
+        <thead>
+            <tr>
+                <th style="width:28%;">Department</th>
+                <th style="width:47%;">Make / OEM</th>
+                <th style="width:25%;">Quantity Installed</th>
+            </tr>
+        </thead>
+
+        <tbody>
+    """
+
+    grand_total = 0
+
+    # --------------------------------------------------------
+    # DEPARTMENT-WISE DISPLAY
+    # --------------------------------------------------------
+
+    for department, dept_data in grouped.groupby(
+        "Department",
+        sort=False
+    ):
+
+        dept_total = dept_data["Quantity Installed"].sum()
+        grand_total += dept_total
+
+        first_row = True
+        rowspan = len(dept_data)
+
+        for _, row in dept_data.iterrows():
+
+            html += "<tr>"
+
+            # Department cell only once
+            if first_row:
+                html += f"""
+                <td class="department-cell"
+                    rowspan="{rowspan}">
+                    {department}
+                </td>
+                """
+
+                first_row = False
+
+            # Make/OEM
+            html += f"""
+                <td class="make-cell">
+                    {row['Make / OEM']}
+                </td>
+
+                <td class="qty-cell">
+                    {int(row['Quantity Installed'])}
+                </td>
+            </tr>
+            """
+
+        # Department total
+        html += f"""
+        <tr class="department-total">
+
+            <td>
+                {department} Total
+            </td>
+
+            <td></td>
+
+            <td class="qty-cell">
+                {int(dept_total)}
+            </td>
+
+        </tr>
+        """
+
+    # --------------------------------------------------------
+    # GRAND TOTAL
+    # --------------------------------------------------------
+
+    html += f"""
+        <tr class="grand-total">
+
+            <td>
+                GRAND TOTAL
+            </td>
+
+            <td></td>
+
+            <td class="qty-cell">
+                {int(grand_total)}
+            </td>
+
+        </tr>
+
+        </tbody>
+    </table>
+    """
+
+    # Display table
+    st.html(html)
 
 # =========================================================
 # LOGIN PAGE
@@ -216,8 +625,8 @@ if not st.session_state.logged_in:
         )
 
         if st.button(
-            "LOGIN",
-            use_container_width=True
+                "LOGIN",
+                use_container_width=True
         ):
 
             if username == "admin" and password == "jsw123":
@@ -252,7 +661,7 @@ else:
 
         st.markdown("""
         <style>
-        
+
         /* =================================================
            FIX HOME DASHBOARD SCREEN
           ================================================= */
@@ -280,15 +689,13 @@ else:
            ================================================= */
 
         .stButton {
-            width: 100%;
             transform: translateY(0px);
         }
 
         .stButton > button {
 
             height: 82px !important;
-            width: 100% !important;
-            min-width: 0 !important;
+            width: 200px !important;
 
             border-radius: 10px !important;
 
@@ -421,10 +828,9 @@ else:
         0 4px 12px
         rgba(0,0,0,0.35);
 
-    margin-top: -200px;
+    margin-top: -155px;
     margin-bottom: 15px;
     }
-
 
         /* =================================================
            JSW LOGO
@@ -434,61 +840,34 @@ else:
 
             width: 210px;
             height: 72px;
-
             background: white;
-
             border-radius: 5px;
-
             display: flex;
-
             align-items: center;
-
             justify-content: center;
-
             flex-shrink: 0;
-
         }
-
         .dashboard-logo img {
-
             width: 195px;
-
             height: auto;
-
         }
-
         /* =================================================
            CENTER HEADER
            ================================================= */
-
         .dashboard-center {
-
             flex: 1;
-
             text-align: center;
-
             padding: 0 15px;
-
         }
-
         .dashboard-main-title {
-
             color: white;
-
             font-size: 18px;
-
             font-weight: 800;
-
             margin: 0;
-
         }
-
         .dashboard-sub-title {
-
             color: #ffd900;
-
             font-size: 22px;
-
             font-weight: 900;
 
             margin: 2px 0;
@@ -603,17 +982,11 @@ else:
 
         div[data-testid="stForm"]
         div[data-testid="stButton"] > button {
-
             height: 45px !important;
-
             width: 125px !important;
-
             min-height: 45px !important;
-
             font-size: 16px !important;
-
             border-radius: 8px !important;
-
             background:
                 linear-gradient(
                     145deg,
@@ -621,29 +994,21 @@ else:
                     #12385c,
                     #071f38
                 ) !important;
-
             transform: translateY(0px) !important;
-            
 
         }
-
         </style>
         """, unsafe_allow_html=True)
-
-
         # =================================================
         # DASHBOARD HEADER
         # =================================================
-        st_autorefresh(
-            interval=60000,
-            key="dashboard_clock"
-        )
-        now = datetime.now(ZoneInfo("Asia/Kolkata"))
-
+        now = datetime.now()
         current_date = now.strftime("%d-%b-%Y")
-
-        current_time = now.strftime("%I:%M %p")
-
+        current_time = now.strftime("%I:%M:%S %p")
+        # IMPORTANT:
+        # HTML starts immediately after f"""
+        # This prevents Streamlit from showing
+        # HTML tags as text.
 
         st.markdown(f"""<div class="dashboard-header">
 
@@ -679,14 +1044,13 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
 
 </div>""", unsafe_allow_html=True)
 
-
         # =================================================
         # LOGOUT
         # =================================================
 
         with st.form(
-            "logout_form",
-            border=False
+                "logout_form",
+                border=False
         ):
 
             logout_clicked = st.form_submit_button(
@@ -694,7 +1058,6 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
             )
 
             if logout_clicked:
-
                 st.session_state.logged_in = False
 
                 st.session_state.page = "Home"
@@ -714,26 +1077,40 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
         with col1:
 
             if st.button(
-                " INSTRUMENT LIST",
-                use_container_width=True,
-                key="instrument_list"
+                    " INSTRUMENT LIST",
+                    use_container_width=True,
+                    key="instrument_list"
             ):
-
                 st.session_state.page = "Instrument"
 
                 st.rerun()
 
-
             if st.button(
-                "INSTRUMENT SUMMARY",
-                use_container_width=True,
-                key="instrument_summary"
+                    "INSTRUMENT SUMMARY",
+                    use_container_width=True,
+                    key="instrument_summary"
             ):
-
                 st.session_state.page = "Summary"
 
                 st.rerun()
 
+            if st.button(
+                    "ANALYZER LIST",
+                    use_container_width=True,
+                    key="analyzer_list"
+            ):
+                st.session_state.page = "Analyzer"
+
+                st.rerun()
+
+            if st.button(
+                    "ANALYZER SUMMARY",
+                    use_container_width=True,
+                    key="analyzer_summery"
+            ):
+                st.session_state.page = "Analyzer Summary"
+
+                st.rerun()
 
         # =================================================
         # COLUMN 2
@@ -742,37 +1119,22 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
         with col2:
 
             if st.button(
-                "CONTROL VALVE LIST",
-                use_container_width=True,
-                key="valve_list"
+                    "CONTROL VALVE LIST",
+                    use_container_width=True,
+                    key="valve_list"
             ):
-
                 st.session_state.page = "Valve"
 
                 st.rerun()
 
-
             if st.button(
-                "CONTROL VALVE SUMMARY",
-                use_container_width=True,
-                key="valve_summary"
+                    "CONTROL VALVE SUMMARY",
+                    use_container_width=True,
+                    key="valve_summary"
             ):
-
                 st.session_state.page = "ValveSummary"
 
                 st.rerun()
-
-
-            if st.button(
-                "APPLICATION LINK NAME",
-                use_container_width=True,
-                key="link_page"
-            ):
-
-                st.session_state.page = "APPLICATION LINK"
-
-                st.rerun()
-
 
         # =================================================
         # COLUMN 3
@@ -781,26 +1143,22 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
         with col3:
 
             if st.button(
-                "PLC AUDIT CHECKLIST",
-                use_container_width=True,
-                key="plc_checklist"
+                    "PLC AUDIT CHECKLIST",
+                    use_container_width=True,
+                    key="plc_checklist"
             ):
-
                 st.session_state.page = "PLC CHECKLIST"
 
                 st.rerun()
 
-
             if st.button(
-                "PLC CHECKLIST SUMMARY",
-                use_container_width=True,
-                key="plc_summary"
+                    "PLC CHECKLIST SUMMARY",
+                    use_container_width=True,
+                    key="plc_summary"
             ):
-
                 st.session_state.page = "PLC SUMMARY"
 
                 st.rerun()
-
 
         # =================================================
         # COLUMN 4
@@ -809,23 +1167,22 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
         with col4:
 
             if st.button(
-                "DEPARTMENT STATUS LIST",
-                use_container_width=True,
-                key="department_status"
+                    "SYSTEM ARCHITECTURE",
+                    use_container_width=True,
+                    key="system_architecture"
             ):
+                st.session_state.page = "SYSTEM ARCHITECTURE"
 
-                st.session_state.page = "DEPARTMENT STATUS LIST"
+                st.session_state.system_architecture_department = None
 
                 st.rerun()
 
-
             if st.button(
-                "📈 ",
-                use_container_width=True,
-                key="thermography_summary"
+                    "LINK PAGE",
+                    use_container_width=True,
+                    key="link_page"
             ):
-
-                st.session_state.page = "THERMOGRAPHY SUMMARY"
+                st.session_state.page = "LINK PAGE"
 
                 st.rerun()
 
@@ -836,27 +1193,22 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
         with col5:
 
             if st.button(
-                "SHIFT ROTA",
-                use_container_width=True,
-                key="shift_rota"
+                    "SHIFT ROTA",
+                    use_container_width=True,
+                    key="shift_rota"
             ):
-
                 st.session_state.page = "SHIFT ROTA"
 
                 st.rerun()
 
-
             if st.button(
-                "SHIFT DATA",
-                use_container_width=True,
-                key="shift_data"
+                    "SHIFT DATA",
+                    use_container_width=True,
+                    key="shift_data"
             ):
-
                 st.session_state.page = "SHIFT DATA"
-                st.rerun()
 
-
-    # =====================================================
+            # =====================================================
     # OTHER PAGES
     # =====================================================
 
@@ -874,6 +1226,9 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
             "Summary":
                 "INSTRUMENT SUMMARY",
 
+            "Analyzer Summary":
+                "ANALYZER SUMMARY",
+
             "Valve":
                 "CONTROL VALVE LIST",
 
@@ -886,16 +1241,15 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
             "SHIFT ROTA":
                 "SHIFT ROTA LIST",
 
-            "APPLICATION LINK":
+            "LINK PAGE":
                 "TRAINING & APPLICATION LINKS",
 
             "SHIFT DATA":
                 "SHIFT DATA",
 
-            "DEPARTMENT STATUS LIST":
-                  "DEPARTMENT STATUS LIST",
+            "SYSTEM ARCHITECTURE":
+                "SYSTEM ARCHITECTURE"
         }
-
 
         # =================================================
         # INTERNAL PAGE HEADER CSS
@@ -961,7 +1315,7 @@ AUTOMATION &amp; INSTRUMENT DASHBOARD
             width: 100% !important;
 
         }
-        
+
         /* =================================================
    3D INDUSTRIAL TRAINING & APPLICATION BUTTONS
    ================================================= */
@@ -1057,6 +1411,103 @@ div[data-testid="stLinkButton"] > a:active {
         0 5px 10px rgba(0,0,0,0.25),
         inset 0 4px 8px rgba(0,0,0,0.35) !important;
 }
+
+
+  /* =================================================
+   SYSTEM ARCHITECTURE DEPARTMENT BUTTONS
+   SAME STYLE AS LINK PAGE BUTTONS ONLY
+   ================================================= */
+
+div[class*="st-key-architecture_department_"] div[data-testid="stButton"] {
+    width: 100% !important;
+    margin-top: 8px !important;
+    margin-bottom: 14px !important;
+}
+
+div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > button {
+
+    height: 72px !important;
+    min-height: 72px !important;
+    width: 100% !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    box-sizing: border-box !important;
+    padding: 8px 10px !important;
+
+    border-radius: 10px !important;
+
+    background: linear-gradient(
+        145deg,
+        #315f89,
+        #204d75,
+        #12395f,
+        #082641
+    ) !important;
+
+    color: white !important;
+
+    border: 1px solid #6c9ec5 !important;
+
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+
+    box-shadow:
+        0 7px 0 #041522,
+        0 12px 20px rgba(0,0,0,0.30),
+        0 0 10px rgba(30,140,220,0.25),
+        inset 0 2px 2px rgba(255,255,255,0.35),
+        inset 0 -5px 8px rgba(0,0,0,0.30) !important;
+
+    transition: all 0.18s ease !important;
+}
+
+div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > button p {
+    color: white !important;
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+}
+
+div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > button:hover {
+
+    transform: translateY(-5px) !important;
+
+    color: white !important;
+    border-color: #83c5ef !important;
+
+    background: linear-gradient(
+        145deg,
+        #3c76a5,
+        #28618e,
+        #174b73,
+        #0a2c49
+    ) !important;
+
+    box-shadow:
+        0 12px 0 #041522,
+        0 18px 30px rgba(0,0,0,0.35),
+        0 0 15px rgba(30,160,240,0.60),
+        0 0 30px rgba(30,150,230,0.30),
+        inset 0 2px 3px rgba(255,255,255,0.45) !important;
+}
+
+div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > button:hover p {
+    color: white !important;
+}
+
+div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > button:active {
+
+    transform: translateY(5px) !important;
+
+    box-shadow:
+        0 2px 0 #041522,
+        0 5px 10px rgba(0,0,0,0.25),
+        inset 0 4px 8px rgba(0,0,0,0.35) !important;
+}
         </style>
         """, unsafe_allow_html=True)
 
@@ -1068,18 +1519,15 @@ div[data-testid="stLinkButton"] > a:active {
             [1.3, 7.4, 1.3]
         )
 
-
         with back_col:
 
             if st.button(
-                "⬅ Back",
-                key=f"back_{st.session_state.page}"
+                    "⬅ Back",
+                    key=f"back_{st.session_state.page}"
             ):
-
                 st.session_state.page = "Home"
 
                 st.rerun()
-
 
         with title_col:
 
@@ -1140,6 +1588,16 @@ div[data-testid="stLinkButton"] > a:active {
                         )
                 }
             )
+
+        # =================================================
+        # ANALYZER SUMMARY
+        # =================================================
+
+        elif st.session_state.page == "Analyzer Summary":
+
+            df = load_sheet("Analyzer")
+
+            show_analyzer_summary(df)
 
         # =================================================
         # CONTROL VALVE LIST
@@ -1244,7 +1702,7 @@ div[data-testid="stLinkButton"] > a:active {
         # LINK PAGE
         # =================================================
 
-        elif st.session_state.page == "APPLICATION LINK":
+        elif st.session_state.page == "LINK PAGE":
 
             df = load_sheet("Sheet5")
 
@@ -1253,22 +1711,136 @@ div[data-testid="stLinkButton"] > a:active {
                 c1, c2, c3, c4 = st.columns(4)
 
                 for col, j in zip(
-                    [c1, c2, c3, c4],
-                    range(4)
+                        [c1, c2, c3, c4],
+                        range(4)
                 ):
 
                     if i + j < len(df):
-
                         row = df.iloc[i + j]
 
                         with col:
-
                             st.link_button(
                                 str(row["BUTTON"]),
                                 str(row["LINK"]),
                                 use_container_width=True
                             )
 
+        # =================================================
+        # SYSTEM ARCHITECTURE
+        # =================================================
+
+        elif st.session_state.page == "SYSTEM ARCHITECTURE":
+
+            root_folder = get_system_architecture_folder()
+
+            if root_folder is None:
+
+                st.error(
+                    " "
+                    "not found in Google Drive."
+                )
+
+            else:
+
+                selected_department = st.session_state.get(
+                    "system_architecture_department",
+                    None
+                )
+
+                # =============================================
+                # DEPARTMENT LIST
+                # =============================================
+
+                if selected_department is None:
+
+                    departments = get_department_folders(
+                        root_folder["id"]
+                    )
+
+                    if not departments:
+                        st.warning("No department folders found.")
+
+                    else:
+
+                        for i in range(0, len(departments), 4):
+
+                            cols = st.columns(4)
+
+                            for col, department in zip(
+                                cols,
+                                departments[i:i + 4]
+                            ):
+
+                                with col:
+
+                                    if st.button(
+                                        department["name"],
+                                        use_container_width=True,
+                                        key=f"architecture_department_{department['id']}"
+                                    ):
+
+                                        st.session_state.system_architecture_department = department["id"]
+                                        st.session_state.system_architecture_department_name = department["name"]
+                                        st.rerun()
+
+                # =============================================
+                # DOCUMENT LIST
+                # =============================================
+
+                else:
+
+                    department_name = st.session_state.get(
+                        "system_architecture_department_name",
+                        "DEPARTMENT"
+                    )
+
+                    st.markdown(
+                        f"""
+                        <h2 style="
+                            text-align:center;
+                            color:#12395f;
+                            margin-bottom:20px;
+                        ">
+                            {department_name}
+                        </h2>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                    if st.button(
+                        "⬅ BACK TO DEPARTMENTS",
+                        key="architecture_back"
+                    ):
+
+                        st.session_state.system_architecture_department = None
+                        st.session_state.system_architecture_department_name = None
+                        st.rerun()
+
+                    documents = get_department_documents(
+                        selected_department
+                    )
+
+                    if not documents:
+                        st.warning("No documents found in this department.")
+
+                    else:
+
+                        for i in range(0, len(documents), 3):
+
+                            cols = st.columns(3)
+
+                            for col, document in zip(
+                                cols,
+                                documents[i:i + 3]
+                            ):
+
+                                with col:
+
+                                    st.link_button(
+                                        f"📄 {document['name']}",
+                                        document["webViewLink"],
+                                        use_container_width=True
+                                    )
 
         # =================================================
         # SHIFT DATA
@@ -1339,8 +1911,8 @@ div[data-testid="stLinkButton"] > a:active {
             c1, c2, c3, c4 = st.columns(4)
 
             for col, (shift_name, names) in zip(
-                [c1, c2, c3, c4],
-                shifts.items()
+                    [c1, c2, c3, c4],
+                    shifts.items()
             ):
 
                 with col:
@@ -1362,7 +1934,6 @@ div[data-testid="stLinkButton"] > a:active {
                     )
 
                     for name in names:
-
                         st.markdown(
                             f"""
                             <div style="
@@ -1378,18 +1949,17 @@ div[data-testid="stLinkButton"] > a:active {
                             """,
                             unsafe_allow_html=True
                         )
+        # =================================================
+        # CONTROL VALVE LIST
+        # =================================================
 
-# =================================================
-# DEPARTMENT STATUS
-# =================================================
+        elif st.session_state.page == "Analyzer":
 
-        elif st.session_state.page =="DEPARTMENT STATUS LIST":
+            df = load_sheet("Analyzer")
 
-                df = load_sheet("Sheet6")
-
-                st.dataframe(
-                    df,
-                    use_container_width=True,
-                    hide_index=True,
-                    height=500
-                )
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                height=500
+            )
