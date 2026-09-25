@@ -629,7 +629,41 @@ def show_analyzer_summary(df):
     # ========================================================
 
     # ========================================================
+    # FILTER CALLBACKS
+    # ROBUST MUTUALLY EXCLUSIVE FILTERS
+    # ========================================================
+
+    def reset_oem_when_department_changes():
+        st.session_state["analyzer_oem_widget"] = "ALL MAKE / OEM"
+        st.session_state["analyzer_oem_search"] = "ALL MAKE / OEM"
+
+
+    def reset_department_when_oem_changes():
+        st.session_state["analyzer_department_widget"] = "ALL DEPARTMENTS"
+        st.session_state["analyzer_department_search"] = "ALL DEPARTMENTS"
+
+
+    # ========================================================
+    # INITIAL FILTER VALUES
+    # ========================================================
+
+    if "analyzer_department_widget" not in st.session_state:
+        st.session_state["analyzer_department_widget"] = "ALL DEPARTMENTS"
+
+    if "analyzer_oem_widget" not in st.session_state:
+        st.session_state["analyzer_oem_widget"] = "ALL MAKE / OEM"
+
+    # Separate state values are retained for filtering.
+    if "analyzer_department_search" not in st.session_state:
+        st.session_state["analyzer_department_search"] = "ALL DEPARTMENTS"
+
+    if "analyzer_oem_search" not in st.session_state:
+        st.session_state["analyzer_oem_search"] = "ALL MAKE / OEM"
+
+
+    # ========================================================
     # FILTER SECTION
+    # SAME TWO-COLUMN LAYOUT AS BEFORE
     # ========================================================
 
     search_col1, search_col2 = st.columns(2)
@@ -650,25 +684,28 @@ def show_analyzer_summary(df):
             unsafe_allow_html=True
         )
 
-
         department_list = sorted(
             summary_df["Department"]
             .dropna()
             .unique()
-            .tolist()
+            .tolist(),
+            key=lambda x: str(x).lower()
         )
 
+        department_options = ["ALL DEPARTMENTS"] + department_list
+
+        if st.session_state["analyzer_department_widget"] not in department_options:
+            st.session_state["analyzer_department_widget"] = "ALL DEPARTMENTS"
 
         selected_department = st.selectbox(
-
             "Department",
-
-            ["ALL DEPARTMENTS"] + department_list,
-
-            key="analyzer_department_search",
-
-            label_visibility="collapsed"
+            department_options,
+            key="analyzer_department_widget",
+            label_visibility="collapsed",
+            on_change=reset_oem_when_department_changes
         )
+
+        st.session_state["analyzer_department_search"] = selected_department
 
 
     # ========================================================
@@ -686,40 +723,29 @@ def show_analyzer_summary(df):
             unsafe_allow_html=True
         )
 
-
-        # Show OEM according to selected department
-
-        if selected_department == "ALL DEPARTMENTS":
-
-            oem_data = summary_df
-
-        else:
-
-            oem_data = summary_df[
-                summary_df["Department"]
-                == selected_department
-            ]
-
-
+        # Make / OEM is ALWAYS independent of Department.
         oem_list = sorted(
-            oem_data["Make / OEM"]
+            summary_df["Make / OEM"]
             .dropna()
             .unique()
-            .tolist()
+            .tolist(),
+            key=lambda x: str(x).lower()
         )
 
+        oem_options = ["ALL MAKE / OEM"] + oem_list
+
+        if st.session_state["analyzer_oem_widget"] not in oem_options:
+            st.session_state["analyzer_oem_widget"] = "ALL MAKE / OEM"
 
         selected_oem = st.selectbox(
-
             "Make / OEM",
-
-            ["ALL MAKE / OEM"] + oem_list,
-
-            key="analyzer_oem_search",
-
-            label_visibility="collapsed"
+            oem_options,
+            key="analyzer_oem_widget",
+            label_visibility="collapsed",
+            on_change=reset_department_when_oem_changes
         )
 
+        st.session_state["analyzer_oem_search"] = selected_oem
 
     # ========================================================
     # APPLY DEPARTMENT FILTER
@@ -1940,9 +1966,140 @@ div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > butt
 
         # =================================================
         # INSTRUMENT SUMMARY
+        # SAME PLATFORM / DESIGN AS ANALYZER SUMMARY
         # =================================================
 
         elif st.session_state.page == "Summary":
+
+            # =================================================
+            # INSTRUMENT SUMMARY
+            # SAME PLATFORM / DESIGN AS ANALYZER SUMMARY
+            # =================================================
+
+            # -------------------------------------------------
+            # CSS - SAME LOOK AS ANALYZER SUMMARY
+            # -------------------------------------------------
+
+            st.markdown("""
+            <style>
+
+            .stApp {
+                background: #FFFFFF !important;
+                background-image: none !important;
+            }
+
+            [data-testid="stAppViewContainer"] {
+                background: #FFFFFF !important;
+            }
+
+            [data-testid="stMainBlockContainer"] {
+                background: #FFFFFF !important;
+            }
+
+            .instrument-filter-label {
+                font-size: 16px;
+                font-weight: 800;
+                color: #063B70;
+                margin-bottom: 5px;
+            }
+
+            div[data-testid="stSelectbox"] label {
+                color: #063B70 !important;
+                font-weight: 700 !important;
+            }
+
+            div[data-testid="stSelectbox"] > div {
+                color: #063B70 !important;
+            }
+
+            div[data-baseweb="select"] {
+                background: #FFFFFF !important;
+                border-radius: 7px !important;
+            }
+
+            div[data-baseweb="select"] > div {
+                background: #FFFFFF !important;
+                color: #063B70 !important;
+                border: 1px solid #9DB7D0 !important;
+                border-radius: 7px !important;
+            }
+
+            div[data-baseweb="select"] span {
+                color: #063B70 !important;
+            }
+
+            .instrument-summary-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 16px;
+                font-family: Arial, sans-serif;
+                background: #FFFFFF;
+            }
+
+            .instrument-summary-table th {
+                background: #174F86;
+                color: #FFFFFF;
+                padding: 12px 10px;
+                text-align: center;
+                font-weight: 700;
+                border: 1px solid #FFFFFF;
+            }
+
+            .instrument-summary-table td {
+                padding: 9px 12px;
+                border: 1px solid #D0D7DE;
+                background: #FFFFFF;
+                color: #063B70;
+            }
+
+            .instrument-department-cell {
+                background: #FFFFFF !important;
+                color: #063B70 !important;
+                font-weight: 800;
+                text-align: left !important;
+                vertical-align: middle;
+                font-size: 17px;
+                padding-left: 20px !important;
+            }
+
+            .instrument-type-cell {
+                text-align: left;
+                padding-left: 25px !important;
+                color: #063B70 !important;
+            }
+
+            .instrument-qty-cell {
+                text-align: center;
+                font-weight: 600;
+                color: #063B70 !important;
+            }
+
+            .instrument-department-total td {
+                background: #C9E3F8 !important;
+                color: #063B70 !important;
+                font-weight: 800;
+            }
+
+            .instrument-department-total .instrument-qty-cell {
+                text-align: center;
+                font-size: 17px;
+            }
+
+            .instrument-grand-total td {
+                background: #174F86 !important;
+                color: #FFFFFF !important;
+                font-weight: 800;
+                font-size: 18px;
+                padding: 12px;
+            }
+
+            .instrument-grand-total .instrument-qty-cell {
+                text-align: center;
+                font-size: 20px;
+            }
+
+            </style>
+            """, unsafe_allow_html=True)
 
             # -------------------------------------------------
             # LOAD DATA
@@ -1977,16 +2134,14 @@ div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > butt
                     "Required columns not found: "
                     + ", ".join(missing_columns)
                 )
-
                 st.write(
                     "Available columns:",
                     list(df.columns)
                 )
-
                 st.stop()
 
             # -------------------------------------------------
-            # CLEAN QUANTITY
+            # CLEAN DATA
             # -------------------------------------------------
 
             df["INSTALLED QTY"] = pd.to_numeric(
@@ -1994,7 +2149,6 @@ div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > butt
                 errors="coerce"
             ).fillna(0)
 
-            # Clean AREA
             df["AREA"] = (
                 df["AREA"]
                 .fillna("Others")
@@ -2002,7 +2156,6 @@ div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > butt
                 .str.strip()
             )
 
-            # Clean INSTRUMENT TYPE
             df["INSTRUMENT TYPE"] = (
                 df["INSTRUMENT TYPE"]
                 .fillna("Others")
@@ -2010,26 +2163,58 @@ div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > butt
                 .str.strip()
             )
 
+            # Remove blank rows
+            df = df[
+                (df["AREA"] != "") &
+                (df["INSTRUMENT TYPE"] != "")
+            ].copy()
+
+            # =================================================
+            # FILTER CALLBACKS
+            # MUTUALLY EXCLUSIVE FILTERS
+            # =================================================
+
+            def reset_instrument_type_when_department_changes():
+                st.session_state[
+                    "instrument_summary_type"
+                ] = "ALL INSTRUMENT TYPES"
+
+            def reset_department_when_instrument_type_changes():
+                st.session_state[
+                    "instrument_summary_department"
+                ] = "ALL DEPARTMENTS"
+
+            # =================================================
+            # INITIAL FILTER VALUES
+            # =================================================
+
+            if "instrument_summary_department" not in st.session_state:
+                st.session_state[
+                    "instrument_summary_department"
+                ] = "ALL DEPARTMENTS"
+
+            if "instrument_summary_type" not in st.session_state:
+                st.session_state[
+                    "instrument_summary_type"
+                ] = "ALL INSTRUMENT TYPES"
+
             # =================================================
             # FILTER SECTION
+            # SAME TWO-COLUMN LAYOUT AS ANALYZER SUMMARY
             # =================================================
 
-            filter_col1, filter_col2 = st.columns(2)
+            search_col1, search_col2 = st.columns(2)
 
             # =================================================
-            # DEPARTMENT / AREA FILTER
+            # SEARCH BY DEPARTMENT
             # =================================================
 
-            with filter_col1:
+            with search_col1:
 
                 st.markdown(
                     """
-                    <div style="
-                        font-size:16px;
-                        font-weight:800;
-                        color:#063B70;
-                        margin-bottom:5px;">
-                        🏭 SEARCH BY DEPARTMENT
+                    <div class="instrument-filter-label">
+                        SEARCH BY DEPARTMENT
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -2039,86 +2224,91 @@ div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > butt
                     df["AREA"]
                     .dropna()
                     .unique()
-                    .tolist()
+                    .tolist(),
+                    key=lambda x: str(x).lower()
                 )
+
+                department_options = [
+                    "ALL DEPARTMENTS"
+                ] + department_list
+
+                # Safety check for stale session-state values
+                if st.session_state[
+                    "instrument_summary_department"
+                ] not in department_options:
+                    st.session_state[
+                        "instrument_summary_department"
+                    ] = "ALL DEPARTMENTS"
 
                 selected_department = st.selectbox(
                     "Department",
-                    ["ALL DEPARTMENTS"] + department_list,
+                    department_options,
                     key="instrument_summary_department",
-                    label_visibility="collapsed"
+                    label_visibility="collapsed",
+                    on_change=reset_instrument_type_when_department_changes
                 )
 
             # =================================================
-            # INSTRUMENT TYPE FILTER
+            # SEARCH BY INSTRUMENT TYPE
             # =================================================
 
-            with filter_col2:
+            with search_col2:
 
                 st.markdown(
                     """
-                    <div style="
-                        font-size:16px;
-                        font-weight:800;
-                        color:#063B70;
-                        margin-bottom:5px;">
-                        🔧 SEARCH BY INSTRUMENT TYPE
+                    <div class="instrument-filter-label">
+                        SEARCH BY INSTRUMENT TYPE
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
 
-                # Instrument types change according to
-                # selected department
-
-                if selected_department == "ALL DEPARTMENTS":
-
-                    instrument_type_data = df
-
-                else:
-
-                    instrument_type_data = df[
-                        df["AREA"] == selected_department
-                        ]
-
+                # IMPORTANT:
+                # Instrument Type is ALWAYS independent of Department.
                 instrument_type_list = sorted(
-                    instrument_type_data[
-                        "INSTRUMENT TYPE"
-                    ]
+                    df["INSTRUMENT TYPE"]
                     .dropna()
                     .unique()
-                    .tolist()
+                    .tolist(),
+                    key=lambda x: str(x).lower()
                 )
+
+                instrument_type_options = [
+                    "ALL INSTRUMENT TYPES"
+                ] + instrument_type_list
+
+                # Safety check for stale session-state values
+                if st.session_state[
+                    "instrument_summary_type"
+                ] not in instrument_type_options:
+                    st.session_state[
+                        "instrument_summary_type"
+                    ] = "ALL INSTRUMENT TYPES"
 
                 selected_instrument_type = st.selectbox(
                     "Instrument Type",
-                    ["ALL INSTRUMENT TYPES"]
-                    + instrument_type_list,
+                    instrument_type_options,
                     key="instrument_summary_type",
-                    label_visibility="collapsed"
+                    label_visibility="collapsed",
+                    on_change=reset_department_when_instrument_type_changes
                 )
 
             # =================================================
-            # APPLY DEPARTMENT FILTER
+            # APPLY FILTERS
             # =================================================
 
             filtered_df = df.copy()
 
             if selected_department != "ALL DEPARTMENTS":
                 filtered_df = filtered_df[
-                    filtered_df["AREA"]
-                    == selected_department
-                    ]
-
-            # =================================================
-            # APPLY INSTRUMENT TYPE FILTER
-            # =================================================
+                    filtered_df["AREA"] == selected_department
+                ]
 
             if selected_instrument_type != "ALL INSTRUMENT TYPES":
                 filtered_df = filtered_df[
                     filtered_df["INSTRUMENT TYPE"]
                     == selected_instrument_type
-                    ]
+                ]
 
             # =================================================
             # NO DATA
@@ -2129,86 +2319,131 @@ div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > butt
                     "No instrument data available "
                     "for the selected filters."
                 )
-
                 st.stop()
 
             # =================================================
-            # CREATE SUMMARY
+            # GROUP DEPARTMENT + INSTRUMENT TYPE
             # =================================================
 
-            summary = pd.pivot_table(
-                filtered_df,
-
-                index="AREA",
-
-                columns="INSTRUMENT TYPE",
-
-                values="INSTALLED QTY",
-
-                aggfunc="sum",
-
-                fill_value=0
-            ).reset_index()
-
-            # =================================================
-            # CONVERT QUANTITY TO INTEGER
-            # =================================================
-
-            for col in summary.columns:
-
-                if col != "AREA":
-                    summary[col] = (
-                        pd.to_numeric(
-                            summary[col],
-                            errors="coerce"
-                        )
-                        .fillna(0)
-                        .astype(int)
-                    )
-
-            # =================================================
-            # TOTAL COLUMN
-            # =================================================
-
-            instrument_columns = [
-                col
-                for col in summary.columns
-                if col != "AREA"
-            ]
-
-            summary["TOTAL"] = summary[
-                instrument_columns
-            ].sum(axis=1)
-
-            # =================================================
-            # DISPLAY SUMMARY
-            # =================================================
-
-            st.dataframe(
-
-                summary,
-
-                use_container_width=True,
-
-                hide_index=True,
-
-                height=500,
-
-                column_config={
-
-                    "AREA":
-                        st.column_config.TextColumn(
-                            "DEPARTMENT",
-                            pinned=True
-                        ),
-
-                    "TOTAL":
-                        st.column_config.NumberColumn(
-                            "TOTAL",
-                            format="%d"
-                        )
-                }
+            grouped = (
+                filtered_df
+                .groupby(
+                    ["AREA", "INSTRUMENT TYPE"],
+                    as_index=False
+                )["INSTALLED QTY"]
+                .sum()
             )
+
+            grouped = grouped.sort_values(
+                ["AREA", "INSTRUMENT TYPE"],
+                key=lambda col: col.astype(str).str.lower()
+            )
+
+            # =================================================
+            # CREATE HTML TABLE
+            # SAME STRUCTURE / STYLE AS ANALYZER SUMMARY
+            # =================================================
+
+            html = """
+            <table class="instrument-summary-table">
+                <thead>
+                    <tr>
+                        <th style="width:28%;">
+                            Department
+                        </th>
+                        <th style="width:47%;">
+                            Instrument Type
+                        </th>
+                        <th style="width:25%;">
+                            Quantity Installed
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+            """
+
+            grand_total = 0
+
+            # =================================================
+            # DEPARTMENT-WISE DISPLAY
+            # =================================================
+
+            for department, dept_data in grouped.groupby(
+                "AREA",
+                sort=False
+            ):
+
+                dept_total = dept_data["INSTALLED QTY"].sum()
+                grand_total += dept_total
+
+                first_row = True
+                rowspan = len(dept_data)
+
+                for _, row in dept_data.iterrows():
+
+                    html += "<tr>"
+
+                    if first_row:
+                        html += f"""
+                        <td
+                            class="instrument-department-cell"
+                            rowspan="{rowspan}"
+                        >
+                            {department}
+                        </td>
+                        """
+                        first_row = False
+
+                    html += f"""
+                        <td class="instrument-type-cell">
+                            {row["INSTRUMENT TYPE"]}
+                        </td>
+
+                        <td class="instrument-qty-cell">
+                            {int(row["INSTALLED QTY"])}
+                        </td>
+                    </tr>
+                    """
+
+                # =================================================
+                # DEPARTMENT TOTAL
+                # =================================================
+
+                html += f"""
+                <tr class="instrument-department-total">
+                    <td>
+                        {department} Total
+                    </td>
+                    <td></td>
+                    <td class="instrument-qty-cell">
+                        {int(dept_total)}
+                    </td>
+                </tr>
+                """
+
+            # =================================================
+            # GRAND TOTAL
+            # =================================================
+
+            html += f"""
+                <tr class="instrument-grand-total">
+                    <td>
+                        GRAND TOTAL
+                    </td>
+                    <td></td>
+                    <td class="instrument-qty-cell">
+                        {int(grand_total)}
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            """
+
+            # =================================================
+            # DISPLAY
+            # =================================================
+
+            st.html(html)
 
         # =================================================
         # ANALYZER SUMMARY
@@ -2235,51 +2470,494 @@ div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > butt
                 height=500
             )
 
-
         # =================================================
         # CONTROL VALVE SUMMARY
+        # SAME PLATFORM / DESIGN AS ANALYZER SUMMARY
         # =================================================
 
         elif st.session_state.page == "ValveSummary":
 
+            # =================================================
+            # CSS
+            # SAME LOOK AS ANALYZER SUMMARY
+            # =================================================
+
+            st.markdown("""
+            <style>
+
+            .stApp {
+                background: #FFFFFF !important;
+                background-image: none !important;
+            }
+
+            [data-testid="stAppViewContainer"] {
+                background: #FFFFFF !important;
+            }
+
+            [data-testid="stMainBlockContainer"] {
+                background: #FFFFFF !important;
+            }
+
+            .cv-filter-label {
+                font-size: 16px;
+                font-weight: 800;
+                color: #063B70;
+                margin-bottom: 5px;
+            }
+
+            div[data-testid="stSelectbox"] label {
+                color: #063B70 !important;
+                font-weight: 700 !important;
+            }
+
+            div[data-baseweb="select"] {
+                background: #FFFFFF !important;
+                border-radius: 7px !important;
+            }
+
+            div[data-baseweb="select"] > div {
+                background: #FFFFFF !important;
+                color: #063B70 !important;
+                border: 1px solid #9DB7D0 !important;
+                border-radius: 7px !important;
+            }
+
+            div[data-baseweb="select"] span {
+                color: #063B70 !important;
+            }
+
+            .cv-summary-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 16px;
+                font-family: Arial, sans-serif;
+                background: #FFFFFF;
+            }
+
+            .cv-summary-table th {
+                background: #174F86;
+                color: #FFFFFF;
+                padding: 12px 10px;
+                text-align: center;
+                font-weight: 700;
+                border: 1px solid #FFFFFF;
+            }
+
+            .cv-summary-table td {
+                padding: 9px 12px;
+                border: 1px solid #D0D7DE;
+                background: #FFFFFF;
+                color: #063B70;
+            }
+
+            .cv-department-cell {
+                background: #FFFFFF !important;
+                color: #063B70 !important;
+                font-weight: 800;
+                text-align: left !important;
+                vertical-align: middle;
+                font-size: 17px;
+                padding-left: 20px !important;
+            }
+
+            .cv-make-cell {
+                text-align: left;
+                padding-left: 25px !important;
+                color: #063B70 !important;
+            }
+
+            .cv-qty-cell {
+                text-align: center;
+                font-weight: 600;
+                color: #063B70 !important;
+            }
+
+            .cv-department-total td {
+                background: #C9E3F8 !important;
+                color: #063B70 !important;
+                font-weight: 800;
+            }
+
+            .cv-department-total .cv-qty-cell {
+                text-align: center;
+                font-size: 17px;
+            }
+
+            .cv-grand-total td {
+                background: #174F86 !important;
+                color: #FFFFFF !important;
+                font-weight: 800;
+                font-size: 18px;
+                padding: 12px;
+            }
+
+            .cv-grand-total .cv-qty-cell {
+                text-align: center;
+                font-size: 20px;
+            }
+
+            </style>
+            """, unsafe_allow_html=True)
+
+            # =================================================
+            # LOAD CONTROL VALVE DATA
+            # =================================================
+
             df = load_sheet("Sheet2")
+
+            # =================================================
+            # CLEAN COLUMN NAMES
+            # =================================================
+
+            df.columns = (
+                df.columns
+                .astype(str)
+                .str.strip()
+            )
+
+            # =================================================
+            # CHECK REQUIRED COLUMNS
+            # =================================================
+
+            required_columns = [
+                "Area",
+                "Make",
+                "Quantity"
+            ]
+
+            missing_columns = [
+                col
+                for col in required_columns
+                if col not in df.columns
+            ]
+
+            if missing_columns:
+                st.error(
+                    "Required columns not found: "
+                    + ", ".join(missing_columns)
+                )
+                st.write(
+                    "Available columns:",
+                    list(df.columns)
+                )
+                st.stop()
+
+            # =================================================
+            # CLEAN DATA
+            # =================================================
+
+            df["Area"] = (
+                df["Area"]
+                .fillna("")
+                .astype(str)
+                .str.strip()
+            )
+
+            df["Make"] = (
+                df["Make"]
+                .fillna("")
+                .astype(str)
+                .str.strip()
+            )
 
             df["Quantity"] = pd.to_numeric(
                 df["Quantity"],
                 errors="coerce"
-            )
+            ).fillna(0)
 
-            summary = pd.pivot_table(
-                df,
-                index="Area",
-                values="Quantity",
-                aggfunc="sum",
-                fill_value=0
-            ).reset_index()
+            df = df[
+                (df["Area"] != "") &
+                (df["Make"] != "")
+            ].copy()
 
-            summary.rename(
-                columns={
-                    "Quantity":
-                        "CONTROL VALVE COUNT"
-                },
-                inplace=True
-            )
+            # =================================================
+            # FILTER CALLBACKS
+            # MUTUALLY EXCLUSIVE FILTERS
+            # =================================================
 
-            st.metric(
-                "Total Control Valves",
-                int(
-                    summary[
-                        "CONTROL VALVE COUNT"
-                    ].sum()
+            def reset_make_when_department_changes():
+                st.session_state[
+                    "control_valve_make_search"
+                ] = "ALL MAKES"
+
+
+            def reset_department_when_make_changes():
+                st.session_state[
+                    "control_valve_department_search"
+                ] = "ALL DEPARTMENTS"
+
+
+            # =================================================
+            # INITIAL FILTER VALUES
+            # =================================================
+
+            if "control_valve_department_search" not in st.session_state:
+                st.session_state[
+                    "control_valve_department_search"
+                ] = "ALL DEPARTMENTS"
+
+            if "control_valve_make_search" not in st.session_state:
+                st.session_state[
+                    "control_valve_make_search"
+                ] = "ALL MAKES"
+
+            # =================================================
+            # FILTER SECTION
+            # SAME TWO-COLUMN LAYOUT AS ANALYZER SUMMARY
+            # =================================================
+
+            search_col1, search_col2 = st.columns(2)
+
+            # =================================================
+            # SEARCH BY DEPARTMENT
+            # =================================================
+
+            with search_col1:
+
+                st.markdown(
+                    """
+                    <div class="cv-filter-label">
+                        🏭 SEARCH BY DEPARTMENT
+                    </div>
+                    """,
+                    unsafe_allow_html=True
                 )
+
+                department_list = sorted(
+                    df["Area"]
+                    .dropna()
+                    .unique()
+                    .tolist(),
+                    key=lambda x: str(x).lower()
+                )
+
+                department_options = [
+                    "ALL DEPARTMENTS"
+                ] + department_list
+
+                # If the previous selection is no longer available,
+                # safely return to ALL DEPARTMENTS.
+                if (
+                    st.session_state[
+                        "control_valve_department_search"
+                    ] not in department_options
+                ):
+                    st.session_state[
+                        "control_valve_department_search"
+                    ] = "ALL DEPARTMENTS"
+
+                selected_department = st.selectbox(
+                    "Department",
+                    department_options,
+                    key="control_valve_department_search",
+                    label_visibility="collapsed",
+                    on_change=reset_make_when_department_changes
+                )
+
+            # =================================================
+            # SEARCH BY MAKE
+            # =================================================
+
+            with search_col2:
+
+                st.markdown(
+                    """
+                    <div class="cv-filter-label">
+                        🔧 SEARCH BY MAKE
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                # IMPORTANT:
+                # Make is ALWAYS independent of Department.
+                make_list = sorted(
+                    df["Make"]
+                    .dropna()
+                    .unique()
+                    .tolist(),
+                    key=lambda x: str(x).lower()
+                )
+
+                make_options = [
+                    "ALL MAKES"
+                ] + make_list
+
+                # If the previous selection is no longer available,
+                # safely return to ALL MAKES.
+                if (
+                    st.session_state[
+                        "control_valve_make_search"
+                    ] not in make_options
+                ):
+                    st.session_state[
+                        "control_valve_make_search"
+                    ] = "ALL MAKES"
+
+                selected_make = st.selectbox(
+                    "Make",
+                    make_options,
+                    key="control_valve_make_search",
+                    label_visibility="collapsed",
+                    on_change=reset_department_when_make_changes
+                )
+
+            # =================================================
+            # APPLY DEPARTMENT FILTER
+            # =================================================
+
+            filtered_df = df.copy()
+
+            if selected_department != "ALL DEPARTMENTS":
+                filtered_df = filtered_df[
+                    filtered_df["Area"]
+                    == selected_department
+                ]
+
+            # =================================================
+            # APPLY MAKE FILTER
+            # =================================================
+
+            if selected_make != "ALL MAKES":
+                filtered_df = filtered_df[
+                    filtered_df["Make"]
+                    == selected_make
+                ]
+
+            # =================================================
+            # NO DATA
+            # =================================================
+
+            if filtered_df.empty:
+                st.warning(
+                    "No control valve data available "
+                    "for the selected filter."
+                )
+                st.stop()
+
+            # =================================================
+            # GROUP DEPARTMENT + MAKE
+            # =================================================
+
+            grouped = (
+                filtered_df
+                .groupby(
+                    ["Area", "Make"],
+                    as_index=False
+                )["Quantity"]
+                .sum()
             )
 
-            st.dataframe(
-                summary,
-                use_container_width=True,
-                hide_index=True,
-                height=500
+            grouped = grouped.sort_values(
+                ["Area", "Make"],
+                key=lambda col: col.astype(str).str.lower()
             )
+
+            # =================================================
+            # CREATE HTML TABLE
+            # SAME STRUCTURE AS ANALYZER SUMMARY
+            # =================================================
+
+            html = """
+            <table class="cv-summary-table">
+                <thead>
+                    <tr>
+                        <th style="width:28%;">
+                            Department
+                        </th>
+                        <th style="width:47%;">
+                            Make
+                        </th>
+                        <th style="width:25%;">
+                            Quantity Installed
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+            """
+
+            grand_total = 0
+
+            # =================================================
+            # DEPARTMENT-WISE DISPLAY
+            # =================================================
+
+            for department, dept_data in grouped.groupby(
+                "Area",
+                sort=False
+            ):
+
+                dept_total = dept_data["Quantity"].sum()
+                grand_total += dept_total
+
+                first_row = True
+                rowspan = len(dept_data)
+
+                for _, row in dept_data.iterrows():
+
+                    html += "<tr>"
+
+                    if first_row:
+                        html += f"""
+                        <td
+                            class="cv-department-cell"
+                            rowspan="{rowspan}"
+                        >
+                            {department}
+                        </td>
+                        """
+                        first_row = False
+
+                    html += f"""
+                        <td class="cv-make-cell">
+                            {row["Make"]}
+                        </td>
+
+                        <td class="cv-qty-cell">
+                            {int(row["Quantity"])}
+                        </td>
+                    </tr>
+                    """
+
+                # =================================================
+                # DEPARTMENT TOTAL
+                # =================================================
+
+                html += f"""
+                <tr class="cv-department-total">
+                    <td>
+                        {department} Total
+                    </td>
+                    <td></td>
+                    <td class="cv-qty-cell">
+                        {int(dept_total)}
+                    </td>
+                </tr>
+                """
+
+            # =================================================
+            # GRAND TOTAL
+            # =================================================
+
+            html += f"""
+                <tr class="cv-grand-total">
+                    <td>
+                        GRAND TOTAL
+                    </td>
+                    <td></td>
+                    <td class="cv-qty-cell">
+                        {int(grand_total)}
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            """
+
+            # =================================================
+            # DISPLAY TABLE
+            # =================================================
+
+            st.html(html)
 
         # =================================================
         # PLC CHECKLIST
