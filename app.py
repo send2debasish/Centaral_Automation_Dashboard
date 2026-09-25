@@ -271,67 +271,184 @@ def get_department_documents(parent_id):
 
     return result.get("files", [])
 
-
 # ============================================================
 # ANALYZER SUMMARY
 # ============================================================
 
 def show_analyzer_summary(df):
 
+    # --------------------------------------------------------
+    # CSS
+    # --------------------------------------------------------
+
     st.markdown("""
     <style>
+
+    /* =====================================================
+       PAGE BACKGROUND
+       ===================================================== */
+
+    .stApp {
+        background: #FFFFFF !important;
+        background-image: none !important;
+    }
+
+    [data-testid="stAppViewContainer"] {
+        background: #FFFFFF !important;
+    }
+
+    [data-testid="stMainBlockContainer"] {
+        background: #FFFFFF !important;
+    }
+
+
+    /* =====================================================
+       SUMMARY TITLE
+       ===================================================== */
+
     .summary-title {
         font-size: 30px;
         font-weight: 800;
-        color: #174A7C;
+        color: #063B70;
         text-align: center;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
+
+
+    /* =====================================================
+       FILTER BOX
+       ===================================================== */
+
+    .filter-box {
+        background: #FFFFFF;
+        border: 1px solid #D6E6F5;
+        border-radius: 8px;
+        padding: 10px 14px 12px 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .filter-label {
+        font-size: 16px;
+        font-weight: 800;
+        color: #063B70;
+        margin-bottom: 5px;
+    }
+
+
+    /* =====================================================
+       SELECTBOX
+       ===================================================== */
+
+    div[data-testid="stSelectbox"] label {
+        color: #063B70 !important;
+        font-weight: 700 !important;
+    }
+
+    div[data-testid="stSelectbox"] > div {
+        color: #063B70 !important;
+    }
+
+    div[data-baseweb="select"] {
+        background: #FFFFFF !important;
+        border-radius: 7px !important;
+    }
+
+    div[data-baseweb="select"] > div {
+        background: #FFFFFF !important;
+        color: #063B70 !important;
+        border: 1px solid #9DB7D0 !important;
+        border-radius: 7px !important;
+    }
+
+    div[data-baseweb="select"] span {
+        color: #063B70 !important;
+    }
+
+
+    /* =====================================================
+       SUMMARY TABLE
+       ===================================================== */
 
     .summary-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 16px;
         font-family: Arial, sans-serif;
+        background: #FFFFFF;
     }
+
+
+    /* =====================================================
+       TABLE HEADER
+       ===================================================== */
 
     .summary-table th {
         background: #174F86;
-        color: white;
+        color: #FFFFFF;
         padding: 12px 10px;
         text-align: center;
         font-weight: 700;
-        border: 1px solid white;
+        border: 1px solid #FFFFFF;
     }
+
+
+    /* =====================================================
+       NORMAL TABLE DATA
+       ===================================================== */
 
     .summary-table td {
         padding: 9px 12px;
         border: 1px solid #D0D7DE;
-        background: white;
+        background: #FFFFFF;
+        color: #063B70;
     }
 
+
+    /* =====================================================
+       DEPARTMENT
+       LEFT ALIGNED
+       ===================================================== */
+
     .department-cell {
-        background: #DCEEFF !important;
-        color: #123E68;
-        font-weight: 700;
-        text-align: center;
+        background: #FFFFFF !important;
+        color: #063B70 !important;
+        font-weight: 800;
+        text-align: left !important;
         vertical-align: middle;
         font-size: 17px;
+        padding-left: 20px !important;
     }
+
+
+    /* =====================================================
+       MAKE / OEM
+       ===================================================== */
 
     .make-cell {
         text-align: left;
         padding-left: 25px !important;
+        color: #063B70 !important;
     }
+
+
+    /* =====================================================
+       QUANTITY
+       ===================================================== */
 
     .qty-cell {
         text-align: center;
         font-weight: 600;
+        color: #063B70 !important;
     }
+
+
+    /* =====================================================
+       DEPARTMENT TOTAL
+       ===================================================== */
 
     .department-total td {
         background: #C9E3F8 !important;
-        color: #123E68;
+        color: #063B70 !important;
         font-weight: 800;
     }
 
@@ -340,9 +457,14 @@ def show_analyzer_summary(df):
         font-size: 17px;
     }
 
+
+    /* =====================================================
+       GRAND TOTAL
+       ===================================================== */
+
     .grand-total td {
         background: #174F86 !important;
-        color: white !important;
+        color: #FFFFFF !important;
         font-weight: 800;
         font-size: 18px;
         padding: 12px;
@@ -352,8 +474,11 @@ def show_analyzer_summary(df):
         text-align: center;
         font-size: 20px;
     }
+
+
     </style>
     """, unsafe_allow_html=True)
+
 
     # --------------------------------------------------------
     # FIND REQUIRED COLUMNS
@@ -365,17 +490,21 @@ def show_analyzer_summary(df):
 
     # Department column
     for col in df.columns:
+
         if str(col).strip().lower() in [
             "department",
             "dept",
             "department name",
             "area"
         ]:
+
             department_col = col
             break
 
+
     # Make / OEM column
     for col in df.columns:
+
         if str(col).strip().lower() in [
             "make",
             "oem",
@@ -384,56 +513,87 @@ def show_analyzer_summary(df):
             "manufacturer",
             "make oem"
         ]:
+
             make_col = col
             break
 
+
     # Quantity column
     for col in df.columns:
+
         if str(col).strip().lower() in [
             "quantity installed",
             "qty installed",
             "installed qty",
             "installed quantity",
-            "qty installed",
             "quantity",
             "qty",
             "quantity available"
         ]:
+
             quantity_col = col
             break
+
 
     # --------------------------------------------------------
     # CHECK COLUMNS
     # --------------------------------------------------------
 
     if department_col is None:
+
         st.error("Department column not found.")
-        st.write("Available columns:", list(df.columns))
+
+        st.write(
+            "Available columns:",
+            list(df.columns)
+        )
+
         return
+
 
     if make_col is None:
+
         st.error("Make/OEM column not found.")
-        st.write("Available columns:", list(df.columns))
+
+        st.write(
+            "Available columns:",
+            list(df.columns)
+        )
+
         return
 
+
     if quantity_col is None:
+
         st.error("Quantity Installed column not found.")
-        st.write("Available columns:", list(df.columns))
+
+        st.write(
+            "Available columns:",
+            list(df.columns)
+        )
+
         return
+
 
     # --------------------------------------------------------
     # CLEAN DATA
     # --------------------------------------------------------
 
     summary_df = df[
-        [department_col, make_col, quantity_col]
+        [
+            department_col,
+            make_col,
+            quantity_col
+        ]
     ].copy()
+
 
     summary_df.columns = [
         "Department",
         "Make / OEM",
         "Quantity Installed"
     ]
+
 
     summary_df["Department"] = (
         summary_df["Department"]
@@ -442,6 +602,7 @@ def show_analyzer_summary(df):
         .str.strip()
     )
 
+
     summary_df["Make / OEM"] = (
         summary_df["Make / OEM"]
         .fillna("Others")
@@ -449,10 +610,12 @@ def show_analyzer_summary(df):
         .str.strip()
     )
 
+
     summary_df["Quantity Installed"] = pd.to_numeric(
         summary_df["Quantity Installed"],
         errors="coerce"
     ).fillna(0)
+
 
     # Remove blank rows
     summary_df = summary_df[
@@ -460,128 +623,352 @@ def show_analyzer_summary(df):
         (summary_df["Make / OEM"] != "")
     ]
 
-    # --------------------------------------------------------
+
+    # ========================================================
+    # TITLE
+    # ========================================================
+
+    # ========================================================
+    # FILTER SECTION
+    # ========================================================
+
+    search_col1, search_col2 = st.columns(2)
+
+
+    # ========================================================
+    # DEPARTMENT FILTER
+    # ========================================================
+
+    with search_col1:
+
+        st.markdown(
+            """
+            <div class="filter-label">
+                     SEARCH BY DEPARTMENT
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+        department_list = sorted(
+            summary_df["Department"]
+            .dropna()
+            .unique()
+            .tolist()
+        )
+
+
+        selected_department = st.selectbox(
+
+            "Department",
+
+            ["ALL DEPARTMENTS"] + department_list,
+
+            key="analyzer_department_search",
+
+            label_visibility="collapsed"
+        )
+
+
+    # ========================================================
+    # MAKE / OEM FILTER
+    # ========================================================
+
+    with search_col2:
+
+        st.markdown(
+            """
+            <div class="filter-label">
+                 SEARCH BY MAKE / OEM
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+        # Show OEM according to selected department
+
+        if selected_department == "ALL DEPARTMENTS":
+
+            oem_data = summary_df
+
+        else:
+
+            oem_data = summary_df[
+                summary_df["Department"]
+                == selected_department
+            ]
+
+
+        oem_list = sorted(
+            oem_data["Make / OEM"]
+            .dropna()
+            .unique()
+            .tolist()
+        )
+
+
+        selected_oem = st.selectbox(
+
+            "Make / OEM",
+
+            ["ALL MAKE / OEM"] + oem_list,
+
+            key="analyzer_oem_search",
+
+            label_visibility="collapsed"
+        )
+
+
+    # ========================================================
+    # APPLY DEPARTMENT FILTER
+    # ========================================================
+
+    filtered_df = summary_df.copy()
+
+
+    if selected_department != "ALL DEPARTMENTS":
+
+        filtered_df = filtered_df[
+            filtered_df["Department"]
+            == selected_department
+        ]
+
+
+    # ========================================================
+    # APPLY MAKE / OEM FILTER
+    # ========================================================
+
+    if selected_oem != "ALL MAKE / OEM":
+
+        filtered_df = filtered_df[
+            filtered_df["Make / OEM"]
+            == selected_oem
+        ]
+
+
+    # ========================================================
+    # NO DATA
+    # ========================================================
+
+    if filtered_df.empty:
+
+        st.warning(
+            "No analyzer data available for the selected filters."
+        )
+
+        return
+
+
+    # ========================================================
     # GROUP DEPARTMENT + MAKE/OEM
-    # --------------------------------------------------------
+    # ========================================================
 
     grouped = (
-        summary_df
+
+        filtered_df
+
         .groupby(
-            ["Department", "Make / OEM"],
+            [
+                "Department",
+                "Make / OEM"
+            ],
             as_index=False
-        )["Quantity Installed"]
+        )
+
+        ["Quantity Installed"]
+
         .sum()
     )
 
+
     grouped = grouped.sort_values(
-        ["Department", "Make / OEM"]
+        [
+            "Department",
+            "Make / OEM"
+        ]
     )
 
-    # --------------------------------------------------------
+
+    # ========================================================
     # CREATE HTML TABLE
-    # --------------------------------------------------------
+    # ========================================================
 
     html = """
+
     <table class="summary-table">
 
         <thead>
+
             <tr>
-                <th style="width:28%;">Department</th>
-                <th style="width:47%;">Make / OEM</th>
-                <th style="width:25%;">Quantity Installed</th>
+
+                <th style="width:28%;">
+                    Department
+                </th>
+
+                <th style="width:47%;">
+                    Make / OEM
+                </th>
+
+                <th style="width:25%;">
+                    Quantity Installed
+                </th>
+
             </tr>
+
         </thead>
 
         <tbody>
+
     """
+
 
     grand_total = 0
 
-    # --------------------------------------------------------
+
+    # ========================================================
     # DEPARTMENT-WISE DISPLAY
-    # --------------------------------------------------------
+    # ========================================================
 
     for department, dept_data in grouped.groupby(
         "Department",
         sort=False
     ):
 
-        dept_total = dept_data["Quantity Installed"].sum()
+        dept_total = (
+            dept_data["Quantity Installed"]
+            .sum()
+        )
+
+
         grand_total += dept_total
 
+
         first_row = True
+
         rowspan = len(dept_data)
+
 
         for _, row in dept_data.iterrows():
 
             html += "<tr>"
 
-            # Department cell only once
+
+            # ------------------------------------------------
+            # DEPARTMENT
+            # ------------------------------------------------
+
             if first_row:
+
                 html += f"""
-                <td class="department-cell"
-                    rowspan="{rowspan}">
+
+                <td
+                    class="department-cell"
+                    rowspan="{rowspan}"
+                >
+
                     {department}
+
                 </td>
+
                 """
 
                 first_row = False
 
-            # Make/OEM
+
+            # ------------------------------------------------
+            # MAKE / OEM
+            # ------------------------------------------------
+
             html += f"""
+
                 <td class="make-cell">
+
                     {row['Make / OEM']}
+
                 </td>
+
 
                 <td class="qty-cell">
+
                     {int(row['Quantity Installed'])}
+
                 </td>
+
             </tr>
+
             """
 
-        # Department total
+
+        # ----------------------------------------------------
+        # DEPARTMENT TOTAL
+        # ----------------------------------------------------
+
         html += f"""
+
         <tr class="department-total">
 
             <td>
+
                 {department} Total
+
             </td>
+
 
             <td></td>
 
+
             <td class="qty-cell">
+
                 {int(dept_total)}
+
             </td>
 
         </tr>
+
         """
 
-    # --------------------------------------------------------
+
+    # ========================================================
     # GRAND TOTAL
-    # --------------------------------------------------------
+    # ========================================================
 
     html += f"""
+
         <tr class="grand-total">
 
             <td>
+
                 GRAND TOTAL
+
             </td>
+
 
             <td></td>
 
+
             <td class="qty-cell">
+
                 {int(grand_total)}
+
             </td>
 
         </tr>
 
+
         </tbody>
+
     </table>
+
     """
 
-    # Display table
-    st.html(html)
 
+    # ========================================================
+    # DISPLAY
+    # ========================================================
+
+    st.html(html)
 # =========================================================
 # LOGIN PAGE
 # =========================================================
@@ -1557,34 +1944,268 @@ div[class*="st-key-architecture_department_"] div[data-testid="stButton"] > butt
 
         elif st.session_state.page == "Summary":
 
+            # -------------------------------------------------
+            # LOAD DATA
+            # -------------------------------------------------
+
             df = load_sheet("Sheet1")
+
+            # Clean column names
+            df.columns = (
+                df.columns
+                .astype(str)
+                .str.strip()
+            )
+
+            # -------------------------------------------------
+            # CHECK REQUIRED COLUMNS
+            # -------------------------------------------------
+
+            required_columns = [
+                "AREA",
+                "INSTRUMENT TYPE",
+                "INSTALLED QTY"
+            ]
+
+            missing_columns = [
+                col for col in required_columns
+                if col not in df.columns
+            ]
+
+            if missing_columns:
+                st.error(
+                    "Required columns not found: "
+                    + ", ".join(missing_columns)
+                )
+
+                st.write(
+                    "Available columns:",
+                    list(df.columns)
+                )
+
+                st.stop()
+
+            # -------------------------------------------------
+            # CLEAN QUANTITY
+            # -------------------------------------------------
 
             df["INSTALLED QTY"] = pd.to_numeric(
                 df["INSTALLED QTY"],
                 errors="coerce"
+            ).fillna(0)
+
+            # Clean AREA
+            df["AREA"] = (
+                df["AREA"]
+                .fillna("Others")
+                .astype(str)
+                .str.strip()
             )
 
+            # Clean INSTRUMENT TYPE
+            df["INSTRUMENT TYPE"] = (
+                df["INSTRUMENT TYPE"]
+                .fillna("Others")
+                .astype(str)
+                .str.strip()
+            )
+
+            # =================================================
+            # FILTER SECTION
+            # =================================================
+
+            filter_col1, filter_col2 = st.columns(2)
+
+            # =================================================
+            # DEPARTMENT / AREA FILTER
+            # =================================================
+
+            with filter_col1:
+
+                st.markdown(
+                    """
+                    <div style="
+                        font-size:16px;
+                        font-weight:800;
+                        color:#063B70;
+                        margin-bottom:5px;">
+                        🏭 SEARCH BY DEPARTMENT
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                department_list = sorted(
+                    df["AREA"]
+                    .dropna()
+                    .unique()
+                    .tolist()
+                )
+
+                selected_department = st.selectbox(
+                    "Department",
+                    ["ALL DEPARTMENTS"] + department_list,
+                    key="instrument_summary_department",
+                    label_visibility="collapsed"
+                )
+
+            # =================================================
+            # INSTRUMENT TYPE FILTER
+            # =================================================
+
+            with filter_col2:
+
+                st.markdown(
+                    """
+                    <div style="
+                        font-size:16px;
+                        font-weight:800;
+                        color:#063B70;
+                        margin-bottom:5px;">
+                        🔧 SEARCH BY INSTRUMENT TYPE
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                # Instrument types change according to
+                # selected department
+
+                if selected_department == "ALL DEPARTMENTS":
+
+                    instrument_type_data = df
+
+                else:
+
+                    instrument_type_data = df[
+                        df["AREA"] == selected_department
+                        ]
+
+                instrument_type_list = sorted(
+                    instrument_type_data[
+                        "INSTRUMENT TYPE"
+                    ]
+                    .dropna()
+                    .unique()
+                    .tolist()
+                )
+
+                selected_instrument_type = st.selectbox(
+                    "Instrument Type",
+                    ["ALL INSTRUMENT TYPES"]
+                    + instrument_type_list,
+                    key="instrument_summary_type",
+                    label_visibility="collapsed"
+                )
+
+            # =================================================
+            # APPLY DEPARTMENT FILTER
+            # =================================================
+
+            filtered_df = df.copy()
+
+            if selected_department != "ALL DEPARTMENTS":
+                filtered_df = filtered_df[
+                    filtered_df["AREA"]
+                    == selected_department
+                    ]
+
+            # =================================================
+            # APPLY INSTRUMENT TYPE FILTER
+            # =================================================
+
+            if selected_instrument_type != "ALL INSTRUMENT TYPES":
+                filtered_df = filtered_df[
+                    filtered_df["INSTRUMENT TYPE"]
+                    == selected_instrument_type
+                    ]
+
+            # =================================================
+            # NO DATA
+            # =================================================
+
+            if filtered_df.empty:
+                st.warning(
+                    "No instrument data available "
+                    "for the selected filters."
+                )
+
+                st.stop()
+
+            # =================================================
+            # CREATE SUMMARY
+            # =================================================
+
             summary = pd.pivot_table(
-                df,
+                filtered_df,
+
                 index="AREA",
+
                 columns="INSTRUMENT TYPE",
+
                 values="INSTALLED QTY",
+
                 aggfunc="sum",
+
                 fill_value=0
             ).reset_index()
 
+            # =================================================
+            # CONVERT QUANTITY TO INTEGER
+            # =================================================
+
+            for col in summary.columns:
+
+                if col != "AREA":
+                    summary[col] = (
+                        pd.to_numeric(
+                            summary[col],
+                            errors="coerce"
+                        )
+                        .fillna(0)
+                        .astype(int)
+                    )
+
+            # =================================================
+            # TOTAL COLUMN
+            # =================================================
+
+            instrument_columns = [
+                col
+                for col in summary.columns
+                if col != "AREA"
+            ]
+
+            summary["TOTAL"] = summary[
+                instrument_columns
+            ].sum(axis=1)
+
+            # =================================================
+            # DISPLAY SUMMARY
+            # =================================================
+
             st.dataframe(
+
                 summary,
+
                 use_container_width=True,
+
                 hide_index=True,
+
                 height=500,
 
                 column_config={
 
                     "AREA":
                         st.column_config.TextColumn(
-                            "AREA",
+                            "DEPARTMENT",
                             pinned=True
+                        ),
+
+                    "TOTAL":
+                        st.column_config.NumberColumn(
+                            "TOTAL",
+                            format="%d"
                         )
                 }
             )
